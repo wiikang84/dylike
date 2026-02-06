@@ -2461,6 +2461,24 @@ class TitleScene extends Phaser.Scene {
         // btn.on('pointerdown', () => this.scene.start('GameScene'));  // ★ 기존 코드 (ClassSelectScene으로 변경)
         btn.on('pointerdown', () => this.scene.start('ClassSelectScene'));
 
+        // ★ 전체화면 버튼 추가 (모바일 대응)
+        const fullscreenBtn = this.add.rectangle(w - 60, 40, 100, 36, 0x4a4a6a)
+            .setInteractive({ useHandCursor: true })
+            .setStrokeStyle(2, 0x00a8e8);
+        const fullscreenText = this.add.text(w - 60, 40, '⛶ 전체화면', { fontSize: '14px', fill: '#fff' }).setOrigin(0.5);
+
+        fullscreenBtn.on('pointerdown', () => {
+            if (this.scale.isFullscreen) {
+                this.scale.stopFullscreen();
+                fullscreenText.setText('⛶ 전체화면');
+            } else {
+                this.scale.startFullscreen();
+                fullscreenText.setText('⛶ 창모드');
+            }
+        });
+        fullscreenBtn.on('pointerover', () => fullscreenBtn.setFillStyle(0x5a5a7a));
+        fullscreenBtn.on('pointerout', () => fullscreenBtn.setFillStyle(0x4a4a6a));
+
         this.add.text(w/2, h-40, 'WASD/방향키로 이동', { fontSize: '14px', fill: '#666' }).setOrigin(0.5);
 
         // this.input.keyboard.once('keydown-SPACE', () => this.scene.start('GameScene'));  // ★ 기존 코드
@@ -2802,6 +2820,22 @@ class GameScene extends Phaser.Scene {
         this.fpsText = this.add.text(CONFIG.WIDTH - 20, CONFIG.HEIGHT - 20, 'FPS: 60', { fontSize: '12px', fill: '#0f0' }).setOrigin(1, 0.5);
 
         this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.classText, this.floorText, this.fpsText]);
+
+        // ★★★ 전체화면 버튼 추가 (게임 중에도 사용 가능) ★★★
+        this.fullscreenBtn = this.add.text(CONFIG.WIDTH - 170, hpY, '⛶', {
+            fontSize: '20px',
+            backgroundColor: '#333',
+            padding: { x: 6, y: 4 }
+        }).setScrollFactor(0).setDepth(100).setOrigin(0.5).setInteractive();
+
+        this.fullscreenBtn.on('pointerdown', () => {
+            if (this.scale.isFullscreen) {
+                this.scale.stopFullscreen();
+            } else {
+                this.scale.startFullscreen();
+            }
+        });
+        this.hud.add([this.fullscreenBtn]);
 
         // ★★★ 정지 버튼 추가 ★★★
         this.pauseBtn = this.add.text(CONFIG.WIDTH - 130, hpY, '⏸️', {
@@ -4660,12 +4694,15 @@ class GameScene extends Phaser.Scene {
             boss.bossName = type.name;
             boss.isFloorBoss = true;  // ★ 층 보스 표시
 
-            // 충돌 영역
-            boss.body.setCircle(type.radius);
+            // ★ 충돌 영역 수정 - 텍스처 크기에 맞게 충돌 영역 확대
+            // 슬러지 킹: 120x120 텍스처, radius 55 → 충돌 영역을 텍스처의 80%로 설정
+            const collisionRadius = Math.max(type.radius, boss.width * 0.4);
+            boss.body.setCircle(collisionRadius);
             boss.body.setOffset(
-                (boss.width - type.radius * 2) / 2,
-                (boss.height - type.radius * 2) / 2
+                (boss.width - collisionRadius * 2) / 2,
+                (boss.height - collisionRadius * 2) / 2
             );
+            boss.collisionRadius = collisionRadius;  // 충돌 반경 저장
 
             // 보스 깊이 (적보다 위)
             boss.setDepth(8);
@@ -5916,6 +5953,20 @@ const config = {
     height: CONFIG.HEIGHT,
     parent: 'game-container',
     backgroundColor: '#1a1a2e',
+    // ★ 모바일 전체화면 대응 - Scale 설정 추가
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        // 최소/최대 크기 설정
+        min: {
+            width: 480,
+            height: 270
+        },
+        max: {
+            width: 1920,
+            height: 1080
+        }
+    },
     physics: { default: 'arcade', arcade: { debug: false, gravity: { x: 0, y: 0 } } },
     scene: [BootScene, TitleScene, ClassSelectScene, GameScene, LevelUpScene, GameOverScene, FloorClearScene],
     render: { antialias: false, pixelArt: true, roundPixels: true },

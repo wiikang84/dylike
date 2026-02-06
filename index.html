@@ -83,6 +83,23 @@
             #rotate-message { display: flex; }
             #game-container { display: none; }
         }
+
+        /* ★ 전체화면 모드 대응 */
+        #game-container:fullscreen,
+        #game-container:-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: none !important;
+            max-height: none !important;
+            border-radius: 0;
+        }
+
+        /* 전체화면일 때 게임 컨테이너 */
+        :fullscreen #game-container,
+        :-webkit-full-screen #game-container {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
