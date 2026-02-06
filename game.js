@@ -224,6 +224,72 @@ const SYNERGIES = [
     }
 ];
 
+// ========== ★ 클래스 시스템 (바벨탑 스타일) ★ ==========
+const CLASS_TYPES = {
+    washer: {
+        name: '세척원',
+        icon: '💧',
+        desc: 'HP +20%, 물 공격 데미지 +30%',
+        color: 0x1976d2,
+        bonus: { hpBonus: 0.20, waterDamage: 0.30 },
+        startWeapon: 'waterGun'
+    },
+    purifier: {
+        name: '정화원',
+        icon: '🔮',
+        desc: '범위 +25%, 쿨다운 -15%',
+        color: 0x9c27b0,
+        bonus: { areaBonus: 0.25, cooldownBonus: 0.15 },
+        startWeapon: 'circleField'
+    },
+    technician: {
+        name: '기술자',
+        icon: '🔧',
+        desc: '크리티컬 +10%, 이동속도 +15%',
+        color: 0xff8f00,
+        bonus: { critBonus: 0.10, speedBonus: 0.15 },
+        startWeapon: 'detector'
+    }
+};
+
+// ========== ★ 층 시스템 (바벨탑 스타일) ★ ==========
+const FLOOR_CONFIG = [
+    { floor: 1,  name: '1층: 오염된 로비',      bossType: 'sludge_king',    time: 120000, difficultyMult: 1.0, bossHpMult: 1.0 },
+    { floor: 2,  name: '2층: 폐기물 창고',       bossType: 'drum_giant',     time: 120000, difficultyMult: 1.3, bossHpMult: 1.5 },
+    { floor: 3,  name: '3층: 독성 연구실',       bossType: 'toxic_reaper',   time: 120000, difficultyMult: 1.6, bossHpMult: 2.0 },
+    { floor: 4,  name: '4층: 오염된 공장',       bossType: 'sludge_king',    time: 120000, difficultyMult: 2.0, bossHpMult: 3.0 },
+    { floor: 5,  name: '5층: 유해가스 구역',     bossType: 'drum_giant',     time: 120000, difficultyMult: 2.5, bossHpMult: 4.0 },
+    { floor: 6,  name: '6층: 폐수 처리장',       bossType: 'toxic_reaper',   time: 120000, difficultyMult: 3.0, bossHpMult: 5.0 },
+    { floor: 7,  name: '7층: 슬러지 심연',       bossType: 'sludge_king',    time: 120000, difficultyMult: 3.5, bossHpMult: 6.0 },
+    { floor: 8,  name: '8층: 드럼통 지옥',       bossType: 'drum_giant',     time: 120000, difficultyMult: 4.0, bossHpMult: 8.0 },
+    { floor: 9,  name: '9층: 오염의 정점',       bossType: 'toxic_reaper',   time: 150000, difficultyMult: 4.5, bossHpMult: 10.0 },
+    { floor: 10, name: '10층: 최종 정화',        bossType: 'toxic_reaper',   time: 180000, difficultyMult: 5.0, bossHpMult: 15.0 }
+];
+
+// ========== ★ 장비 시스템 (바벨탑 스타일) ★ ==========
+const EQUIPMENT_GRADES = {
+    common:    { name: '일반', color: 0xffffff, dropRate: 0.70, statMult: 1.0 },
+    uncommon:  { name: '고급', color: 0x4caf50, dropRate: 0.20, statMult: 1.3 },
+    rare:      { name: '희귀', color: 0x2196f3, dropRate: 0.08, statMult: 1.6 },
+    legendary: { name: '전설', color: 0xff9800, dropRate: 0.02, statMult: 2.0 }
+};
+
+const EQUIPMENT_SLOTS = {
+    weapon:    { name: '무기',     icon: '⚔️', statType: 'damage',     baseValue: 5,  desc: '데미지 +%' },
+    armor:     { name: '방어구',   icon: '🛡️', statType: 'maxHp',      baseValue: 20, desc: 'HP +' },
+    gloves:    { name: '장갑',     icon: '🧤', statType: 'attackSpeed', baseValue: 5,  desc: '공격속도 +%' },
+    boots:     { name: '신발',     icon: '👢', statType: 'moveSpeed',   baseValue: 5,  desc: '이동속도 +%' },
+    accessory: { name: '악세서리', icon: '💎', statType: 'special',     baseValue: 3,  desc: '특수 효과' }
+};
+
+// 악세서리 특수 효과
+const ACCESSORY_EFFECTS = [
+    { name: '크리티컬 반지', effect: 'critChance', value: 0.05, desc: '치명타 +5%' },
+    { name: '흡혈의 목걸이', effect: 'lifesteal', value: 0.02, desc: '흡혈 +2%' },
+    { name: '경험치 귀걸이', effect: 'expBonus', value: 0.10, desc: '경험치 +10%' },
+    { name: '자석 팔찌',     effect: 'magnetBonus', value: 0.20, desc: '수집범위 +20%' }
+];
+
 // ==========================================
 // BootScene
 // ==========================================
@@ -2392,11 +2458,89 @@ class TitleScene extends Phaser.Scene {
 
         const btn = this.add.rectangle(w/2, h/2+80, 200, 50, 0x00a8e8).setInteractive({ useHandCursor: true });
         this.add.text(w/2, h/2+80, '게임 시작', { fontSize: '24px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-        btn.on('pointerdown', () => this.scene.start('GameScene'));
+        // btn.on('pointerdown', () => this.scene.start('GameScene'));  // ★ 기존 코드 (ClassSelectScene으로 변경)
+        btn.on('pointerdown', () => this.scene.start('ClassSelectScene'));
 
         this.add.text(w/2, h-40, 'WASD/방향키로 이동', { fontSize: '14px', fill: '#666' }).setOrigin(0.5);
 
-        this.input.keyboard.once('keydown-SPACE', () => this.scene.start('GameScene'));
+        // this.input.keyboard.once('keydown-SPACE', () => this.scene.start('GameScene'));  // ★ 기존 코드
+        this.input.keyboard.once('keydown-SPACE', () => this.scene.start('ClassSelectScene'));
+    }
+}
+
+// ==========================================
+// ★ ClassSelectScene (클래스 선택)
+// ==========================================
+class ClassSelectScene extends Phaser.Scene {
+    constructor() { super({ key: 'ClassSelectScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+
+        this.add.rectangle(w/2, h/2, w, h, COLORS.BG);
+        this.add.text(w/2, 60, '클래스 선택', { fontSize: '42px', fontStyle: 'bold', fill: '#00a8e8' }).setOrigin(0.5);
+        this.add.text(w/2, 100, '플레이 스타일을 선택하세요', { fontSize: '16px', fill: '#aaa' }).setOrigin(0.5);
+
+        const classKeys = Object.keys(CLASS_TYPES);
+        const cardWidth = 220;
+        const gap = 30;
+        const startX = w/2 - ((classKeys.length - 1) * (cardWidth + gap)) / 2;
+
+        classKeys.forEach((key, i) => {
+            const classInfo = CLASS_TYPES[key];
+            const x = startX + i * (cardWidth + gap);
+            const y = h/2 + 20;
+
+            // 카드 배경
+            const card = this.add.rectangle(x, y, cardWidth, 280, 0x2a2a4a)
+                .setStrokeStyle(3, classInfo.color)
+                .setInteractive({ useHandCursor: true });
+
+            // 아이콘
+            this.add.text(x, y - 90, classInfo.icon, { fontSize: '64px' }).setOrigin(0.5);
+
+            // 클래스 이름
+            this.add.text(x, y - 20, classInfo.name, {
+                fontSize: '24px', fontStyle: 'bold', fill: '#fff'
+            }).setOrigin(0.5);
+
+            // 설명
+            this.add.text(x, y + 30, classInfo.desc, {
+                fontSize: '13px', fill: '#aaa',
+                wordWrap: { width: cardWidth - 20 },
+                align: 'center'
+            }).setOrigin(0.5);
+
+            // 시작 무기
+            const startWeapon = WEAPONS[classInfo.startWeapon];
+            this.add.text(x, y + 80, `시작 무기: ${startWeapon.icon} ${startWeapon.name}`, {
+                fontSize: '12px', fill: '#7cb342'
+            }).setOrigin(0.5);
+
+            // 호버 효과
+            card.on('pointerover', () => {
+                card.setFillStyle(0x3a3a5a);
+                card.setStrokeStyle(4, classInfo.color);
+            });
+            card.on('pointerout', () => {
+                card.setFillStyle(0x2a2a4a);
+                card.setStrokeStyle(3, classInfo.color);
+            });
+
+            // 클릭 시 게임 시작
+            card.on('pointerdown', () => {
+                this.scene.start('GameScene', { selectedClass: key });
+            });
+        });
+
+        // 하단 안내
+        this.add.text(w/2, h - 40, '1, 2, 3 키로도 선택 가능', { fontSize: '14px', fill: '#666' }).setOrigin(0.5);
+
+        // 키보드 단축키
+        this.input.keyboard.once('keydown-ONE', () => this.scene.start('GameScene', { selectedClass: 'washer' }));
+        this.input.keyboard.once('keydown-TWO', () => this.scene.start('GameScene', { selectedClass: 'purifier' }));
+        this.input.keyboard.once('keydown-THREE', () => this.scene.start('GameScene', { selectedClass: 'technician' }));
     }
 }
 
@@ -2406,6 +2550,11 @@ class TitleScene extends Phaser.Scene {
 class GameScene extends Phaser.Scene {
     constructor() { super({ key: 'GameScene' }); }
 
+    // ★ 클래스 선택 데이터 받기
+    init(data) {
+        this.selectedClass = data?.selectedClass || 'washer';
+    }
+
     create() {
         this.gameTime = 0;
         this.isPaused = false;
@@ -2413,17 +2562,50 @@ class GameScene extends Phaser.Scene {
         this.invincibleAura = null;  // ★ 무적 오라 참조
         this.lastSkillUIUpdate = -1; // ★ 스킬 UI 업데이트 타이머
 
+        // ★ 클래스 정보 가져오기
+        const classInfo = CLASS_TYPES[this.selectedClass];
+        const classBonus = classInfo.bonus;
+
+        // ★ 클래스 보너스 적용된 초기 HP
+        const baseMaxHp = CONFIG.PLAYER_MAX_HP;
+        const hpBonus = classBonus.hpBonus || 0;
+        const finalMaxHp = Math.floor(baseMaxHp * (1 + hpBonus));
+
+        // ★ 클래스 보너스 적용된 초기 속도
+        const baseSpeed = CONFIG.PLAYER_SPEED;
+        const speedBonus = classBonus.speedBonus || 0;
+        const finalSpeed = Math.floor(baseSpeed * (1 + speedBonus));
+
+        // ★ 시작 무기 설정
+        const startWeapon = classInfo.startWeapon;
+
         this.playerState = {
-            hp: CONFIG.PLAYER_MAX_HP,
-            maxHp: CONFIG.PLAYER_MAX_HP,
+            hp: finalMaxHp,
+            maxHp: finalMaxHp,
             level: 1,
             exp: 0,
             expToNext: 10,
             kills: 0,
-            speed: CONFIG.PLAYER_SPEED,
+            speed: finalSpeed,
             invincibleTime: 0,
-            weapons: { waterGun: 1 },  // ★ 고압 세척기만 기본 장착
-            passives: {}
+            // weapons: { waterGun: 1 },  // ★ 기존 코드
+            weapons: { [startWeapon]: 1 },  // ★ 클래스별 시작 무기
+            passives: {},
+            // ★★★ 바벨탑 스타일 신규 시스템 ★★★
+            className: this.selectedClass,
+            classBonus: classBonus,
+            currentFloor: 1,                // 현재 층
+            floorTime: 0,                   // 현재 층 진행 시간
+            floorBossDefeated: false,       // 현재 층 보스 처치 여부
+            equipment: {                     // 장비 슬롯
+                weapon: null,
+                armor: null,
+                gloves: null,
+                boots: null,
+                accessory: null
+            },
+            bannedSkills: [],               // 밴된 스킬 목록
+            rerollCount: 0                  // 리롤 횟수
         };
 
         this.spawnTimer = 0;
@@ -2603,10 +2785,23 @@ class GameScene extends Phaser.Scene {
         // 킬 카운트 (더 크게)
         this.killText = this.add.text(CONFIG.WIDTH - 20, expY + 20, '정화: 0', { fontSize: '14px', fontStyle: 'bold', fill: '#aaa' }).setOrigin(1, 0.5);
 
+        // ★★★ 클래스 & 층 표시 (바벨탑 스타일) ★★★
+        const classInfo = CLASS_TYPES[this.playerState.className];
+        this.classText = this.add.text(380, hpY, `${classInfo.icon} ${classInfo.name}`, {
+            fontSize: '16px', fontStyle: 'bold', fill: '#' + classInfo.color.toString(16).padStart(6, '0'),
+            stroke: '#000', strokeThickness: 2
+        }).setOrigin(0, 0.5);
+
+        const floorInfo = FLOOR_CONFIG[this.playerState.currentFloor - 1];
+        this.floorText = this.add.text(500, hpY, `🏢 ${floorInfo.name}`, {
+            fontSize: '14px', fontStyle: 'bold', fill: '#ffd700',
+            stroke: '#000', strokeThickness: 2
+        }).setOrigin(0, 0.5);
+
         // FPS
         this.fpsText = this.add.text(CONFIG.WIDTH - 20, CONFIG.HEIGHT - 20, 'FPS: 60', { fontSize: '12px', fill: '#0f0' }).setOrigin(1, 0.5);
 
-        this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.fpsText]);
+        this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.classText, this.floorText, this.fpsText]);
 
         // ★★★ 정지 버튼 추가 ★★★
         this.pauseBtn = this.add.text(CONFIG.WIDTH - 130, hpY, '⏸️', {
@@ -2675,9 +2870,12 @@ class GameScene extends Phaser.Scene {
         return active;
     }
 
-    // 시너지 보너스 계산
+    // 시너지 보너스 계산 (+ 클래스 보너스 + 장비 보너스)
     getSynergyBonus() {
         const activeSynergies = this.getActiveSynergies();
+        const classBonus = this.playerState.classBonus || {};
+        const equipBonus = this.getEquipmentBonus ? this.getEquipmentBonus() : {};
+
         const bonus = {
             damage: 0,
             area: 0,
@@ -2687,8 +2885,27 @@ class GameScene extends Phaser.Scene {
             regen: 0,
             critDamage: 0,
             projectile: 0,
-            lifesteal: 0
+            lifesteal: 0,
+            // ★ 클래스 보너스 추가
+            waterDamage: classBonus.waterDamage || 0,  // 세척원: 물 공격 데미지
+            critBonus: classBonus.critBonus || 0,      // 기술자: 크리티컬 확률
+            // ★ 장비 보너스 추가
+            attackSpeed: 0,
+            expBonus: 0,
+            magnetBonus: 0
         };
+
+        // ★ 클래스 보너스 적용
+        if (classBonus.areaBonus) bonus.area += classBonus.areaBonus;       // 정화원: 범위
+        if (classBonus.cooldownBonus) bonus.cooldown += classBonus.cooldownBonus;  // 정화원: 쿨다운
+
+        // ★ 장비 보너스 적용
+        if (equipBonus.damage) bonus.damage += equipBonus.damage;
+        if (equipBonus.attackSpeed) bonus.attackSpeed += equipBonus.attackSpeed;
+        if (equipBonus.critChance) bonus.critBonus += equipBonus.critChance;
+        if (equipBonus.lifesteal) bonus.lifesteal += equipBonus.lifesteal;
+        if (equipBonus.expBonus) bonus.expBonus += equipBonus.expBonus;
+        if (equipBonus.magnetBonus) bonus.magnetBonus += equipBonus.magnetBonus;
 
         for (const synergy of activeSynergies) {
             if (synergy.bonus.damage) bonus.damage += synergy.bonus.damage;
@@ -2931,6 +3148,7 @@ class GameScene extends Phaser.Scene {
         if (this.isPaused) return;
 
         this.gameTime += delta;
+        this.playerState.floorTime += delta;  // ★ 층 시간도 업데이트
         this.updateHUD();
         this.updateMinimap();       // ★ 미니맵 업데이트
         this.updatePlayer();
@@ -3035,12 +3253,15 @@ class GameScene extends Phaser.Scene {
         const synergyBonus = this.getSynergyBonus();
         const dmgBonus = 1 + (this.playerState.passives.damage || 0) * PASSIVES.damage.effect + synergyBonus.damage;
 
-        // 고압 세척기
+        // ★ 클래스 보너스: 물 공격 데미지 (세척원 전용)
+        const waterDmgBonus = 1 + (synergyBonus.waterDamage || 0);
+
+        // 고압 세척기 (물 공격 - 세척원 보너스 적용)
         const wgLv = this.playerState.weapons.waterGun || 0;
         if (wgLv > 0) {
             const cd = WEAPONS.waterGun.baseCooldown * (1 - wgLv * 0.05);
             if (time > this.weaponTimers.waterGun + cd) {
-                this.fireWaterGun(wgLv, dmgBonus);
+                this.fireWaterGun(wgLv, dmgBonus * waterDmgBonus);
                 this.weaponTimers.waterGun = time;
             }
         }
@@ -3055,12 +3276,12 @@ class GameScene extends Phaser.Scene {
             }
         }
 
-        // ★ 준설호스 (부채꼴 범위 공격)
+        // ★ 준설호스 (물 공격 - 세척원 보너스 적용)
         const dhLv = this.playerState.weapons.dredgeHose || 0;
         if (dhLv > 0) {
             const cd = WEAPONS.dredgeHose.baseCooldown;
             if (time > this.weaponTimers.dredgeHose + cd) {
-                this.fireDredgeHose(dhLv, dmgBonus);
+                this.fireDredgeHose(dhLv, dmgBonus * waterDmgBonus);
                 this.weaponTimers.dredgeHose = time;
             }
         }
@@ -3157,8 +3378,9 @@ class GameScene extends Phaser.Scene {
         let finalDamage = baseDamage;
         let isCrit = false;
 
-        // 크리티컬 확률 체크
-        const critChance = (this.playerState.passives.critChance || 0) * PASSIVES.critChance.effect;
+        // 크리티컬 확률 체크 (+ 기술자 클래스 보너스)
+        const synergyBonus = this.getSynergyBonus();
+        const critChance = (this.playerState.passives.critChance || 0) * PASSIVES.critChance.effect + (synergyBonus.critBonus || 0);
         if (Math.random() < critChance) {
             isCrit = true;
             const critMultiplier = 1.5 + (this.playerState.passives.critDamage || 0) * PASSIVES.critDamage.effect;
@@ -4117,12 +4339,17 @@ class GameScene extends Phaser.Scene {
             // 플레이어 전투력 지수 (1.0 기준)
             const playerPower = 1 + (totalWeaponLevel * 0.05) + (totalPassiveLevel * 0.03);
 
-            // ★★★ 적응형 스케일링 시스템 ★★★
+            // ★★★ 층별 난이도 배율 (바벨탑 스타일) ★★★
+            const currentFloor = this.playerState.currentFloor || 1;
+            const floorConfig = FLOOR_CONFIG[currentFloor - 1];
+            const floorMult = floorConfig?.difficultyMult || 1.0;
+
+            // ★★★ 적응형 스케일링 시스템 (층 배율 적용) ★★★
             const timeScale = {
-                hp: 1 + minutes * 0.3,         // 분당 30% HP 증가
-                speed: Math.min(1 + minutes * 0.08, 2.0),  // 최대 2배
-                damage: 1 + minutes * 0.15,    // 분당 15% 데미지 증가
-                size: 1 + minutes * 0.06       // 분당 6% 크기 증가
+                hp: (1 + minutes * 0.25) * floorMult,     // 분당 25% HP 증가 × 층 배율
+                speed: Math.min(1 + minutes * 0.06, 1.8) * Math.min(floorMult, 1.5),  // 최대 1.8배
+                damage: (1 + minutes * 0.12) * floorMult,  // 분당 12% 데미지 증가 × 층 배율
+                size: 1 + minutes * 0.05                   // 분당 5% 크기 증가
             };
 
             // ★ 플레이어 전투력에 비례한 스케일링 (핵심!)
@@ -4232,9 +4459,27 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // ========== 보스 시스템 ==========
+    // ========== 보스 시스템 (바벨탑 스타일: 층별 보스) ==========
     updateBossSpawning() {
-        // 각 보스 스폰 시간 체크
+        // ★ 현재 층의 보스가 아직 스폰되지 않았고, 층 시간 경과 시 보스 스폰
+        const currentFloor = this.playerState.currentFloor || 1;
+        const floorConfig = FLOOR_CONFIG[currentFloor - 1];
+
+        if (!floorConfig) return;
+
+        // 층 시간 업데이트
+        this.playerState.floorTime = this.playerState.floorTime || 0;
+
+        // 층 제한 시간 경과 시 보스 스폰
+        const bossKey = floorConfig.bossType;
+        const floorBossKey = `floor_${currentFloor}_${bossKey}`;
+
+        if (this.playerState.floorTime >= floorConfig.time && !this.spawnedBosses[floorBossKey]) {
+            this.showBossWarning(bossKey);
+            this.spawnedBosses[floorBossKey] = true;
+        }
+
+        /* ★ 기존 시간 기반 보스 시스템 (주석 처리)
         Object.keys(BOSS_TYPES).forEach(bossKey => {
             const boss = BOSS_TYPES[bossKey];
             // 스폰 시간 도달 && 아직 스폰 안됨
@@ -4243,6 +4488,7 @@ class GameScene extends Phaser.Scene {
                 this.spawnedBosses[bossKey] = true;
             }
         });
+        */
     }
 
     showBossWarning(bossKey) {
@@ -4293,15 +4539,21 @@ class GameScene extends Phaser.Scene {
             boss.setActive(true).setVisible(true);
             boss.setTexture(textureKey);
 
-            // 보스 데이터 설정
-            boss.hp = type.hp;
-            boss.maxHp = type.hp;
+            // ★ 층별 보스 HP 배율 적용 (바벨탑 스타일)
+            const currentFloor = this.playerState.currentFloor || 1;
+            const floorConfig = FLOOR_CONFIG[currentFloor - 1];
+            const bossHpMult = floorConfig?.bossHpMult || 1.0;
+
+            // 보스 데이터 설정 (층 배율 적용)
+            boss.hp = Math.floor(type.hp * bossHpMult);
+            boss.maxHp = boss.hp;
             boss.bossSpeed = type.speed;
-            boss.bossDamage = type.damage;
-            boss.bossExp = type.exp;
+            boss.bossDamage = Math.floor(type.damage * (1 + (currentFloor - 1) * 0.2));  // 층당 20% 데미지 증가
+            boss.bossExp = Math.floor(type.exp * (1 + (currentFloor - 1) * 0.3));  // 층당 30% 경험치 증가
             boss.bossRadius = type.radius;
             boss.bossType = bossKey;
             boss.bossName = type.name;
+            boss.isFloorBoss = true;  // ★ 층 보스 표시
 
             // 충돌 영역
             boss.body.setCircle(type.radius);
@@ -4483,6 +4735,218 @@ class GameScene extends Phaser.Scene {
 
         // 보스 비활성화
         boss.setActive(false).setVisible(false).setVelocity(0, 0);
+
+        // ★★★ 바벨탑 스타일: 층 보스 처치 시 층 진행 ★★★
+        if (boss.isFloorBoss) {
+            this.playerState.floorBossDefeated = true;
+
+            // 장비 드롭 생성
+            const droppedEquipment = this.generateEquipmentDrop();
+
+            // 층 클리어 씬 호출 (1.5초 후)
+            this.time.delayedCall(1500, () => {
+                this.scene.pause();
+                this.scene.launch('FloorClearScene', {
+                    floor: this.playerState.currentFloor,
+                    equipment: droppedEquipment,
+                    totalTime: this.gameTime,
+                    kills: this.playerState.kills,
+                    level: this.playerState.level,
+                    callback: () => {
+                        // ★ 장비 장착
+                        this.equipItem(droppedEquipment);
+                        // 다음 층 진행
+                        this.advanceToNextFloor();
+                        this.scene.resume();
+                    }
+                });
+            });
+        }
+    }
+
+    // ★★★ 장비 드롭 생성 ★★★
+    generateEquipmentDrop() {
+        // 등급 결정
+        const rand = Math.random();
+        let grade = 'common';
+        let accumulatedRate = 0;
+
+        for (const [gradeKey, gradeInfo] of Object.entries(EQUIPMENT_GRADES)) {
+            accumulatedRate += gradeInfo.dropRate;
+            if (rand < accumulatedRate) {
+                grade = gradeKey;
+                break;
+            }
+        }
+
+        // 슬롯 랜덤 선택
+        const slotKeys = Object.keys(EQUIPMENT_SLOTS);
+        const slot = Phaser.Math.RND.pick(slotKeys);
+        const slotInfo = EQUIPMENT_SLOTS[slot];
+        const gradeInfo = EQUIPMENT_GRADES[grade];
+
+        // 스탯 값 계산
+        let statValue = Math.floor(slotInfo.baseValue * gradeInfo.statMult);
+        let effectName = slotInfo.statType;
+        let effectDesc = '';
+
+        // 악세서리는 특수 효과
+        if (slot === 'accessory') {
+            const accessoryEffect = Phaser.Math.RND.pick(ACCESSORY_EFFECTS);
+            effectName = accessoryEffect.effect;
+            statValue = accessoryEffect.value * gradeInfo.statMult;
+            effectDesc = accessoryEffect.desc;
+        } else {
+            effectDesc = `${slotInfo.desc.replace('+', '+' + statValue)}`;
+        }
+
+        return {
+            slot: slot,
+            grade: grade,
+            name: `${gradeInfo.name} ${slotInfo.name}`,
+            statType: effectName,
+            statValue: statValue,
+            desc: effectDesc
+        };
+    }
+
+    // ★★★ 다음 층으로 진행 ★★★
+    advanceToNextFloor() {
+        if (this.playerState.currentFloor >= 10) {
+            // 10층 클리어 - 게임 승리!
+            return;
+        }
+
+        // 층 증가
+        this.playerState.currentFloor++;
+        this.playerState.floorTime = 0;
+        this.playerState.floorBossDefeated = false;
+
+        // 보스 스폰 기록 초기화 (층 보스는 각 층마다 새로)
+        this.spawnedBosses = {};
+
+        // HUD 업데이트
+        const floorInfo = FLOOR_CONFIG[this.playerState.currentFloor - 1];
+        if (this.floorText) {
+            this.floorText.setText(`🏢 ${floorInfo.name}`);
+        }
+
+        // 층 진입 알림
+        const floorAlert = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            `🏢 ${floorInfo.name} 진입! 🏢`,
+            { fontSize: '36px', fontStyle: 'bold', fill: '#ffd700', stroke: '#000', strokeThickness: 4 }
+        ).setOrigin(0.5).setDepth(300).setScrollFactor(0);
+
+        this.tweens.add({
+            targets: floorAlert,
+            alpha: { from: 1, to: 0 },
+            scale: { from: 1, to: 1.3 },
+            duration: 2000,
+            onComplete: () => floorAlert.destroy()
+        });
+    }
+
+    // ★★★ 장비 장착 ★★★
+    equipItem(equipment) {
+        if (!equipment) return;
+
+        const slot = equipment.slot;
+        const oldEquip = this.playerState.equipment[slot];
+
+        // 기존 장비 효과 제거
+        if (oldEquip) {
+            this.removeEquipmentBonus(oldEquip);
+        }
+
+        // 새 장비 장착
+        this.playerState.equipment[slot] = equipment;
+
+        // 새 장비 효과 적용
+        this.applyEquipmentBonus(equipment);
+    }
+
+    // ★★★ 장비 보너스 적용 ★★★
+    applyEquipmentBonus(equipment) {
+        if (!equipment) return;
+
+        switch (equipment.statType) {
+            case 'damage':
+                // 데미지는 getSynergyBonus에서 처리
+                break;
+            case 'maxHp':
+                this.playerState.maxHp += equipment.statValue;
+                this.playerState.hp = Math.min(this.playerState.hp + equipment.statValue, this.playerState.maxHp);
+                break;
+            case 'attackSpeed':
+                // 공격속도는 무기 쿨다운에서 처리
+                break;
+            case 'moveSpeed':
+                this.playerState.speed += CONFIG.PLAYER_SPEED * (equipment.statValue / 100);
+                break;
+            case 'critChance':
+            case 'lifesteal':
+            case 'expBonus':
+            case 'magnetBonus':
+                // 특수 효과는 getEquipmentBonus에서 처리
+                break;
+        }
+    }
+
+    // ★★★ 장비 보너스 제거 ★★★
+    removeEquipmentBonus(equipment) {
+        if (!equipment) return;
+
+        switch (equipment.statType) {
+            case 'maxHp':
+                const hpReduction = equipment.statValue;
+                this.playerState.maxHp -= hpReduction;
+                this.playerState.hp = Math.min(this.playerState.hp, this.playerState.maxHp);
+                break;
+            case 'moveSpeed':
+                this.playerState.speed -= CONFIG.PLAYER_SPEED * (equipment.statValue / 100);
+                break;
+        }
+    }
+
+    // ★★★ 장비 보너스 계산 (시너지 보너스와 함께 사용) ★★★
+    getEquipmentBonus() {
+        const bonus = {
+            damage: 0,
+            attackSpeed: 0,
+            critChance: 0,
+            lifesteal: 0,
+            expBonus: 0,
+            magnetBonus: 0
+        };
+
+        for (const [slot, equip] of Object.entries(this.playerState.equipment)) {
+            if (!equip) continue;
+
+            switch (equip.statType) {
+                case 'damage':
+                    bonus.damage += equip.statValue / 100;
+                    break;
+                case 'attackSpeed':
+                    bonus.attackSpeed += equip.statValue / 100;
+                    break;
+                case 'critChance':
+                    bonus.critChance += equip.statValue;
+                    break;
+                case 'lifesteal':
+                    bonus.lifesteal += equip.statValue;
+                    break;
+                case 'expBonus':
+                    bonus.expBonus += equip.statValue;
+                    break;
+                case 'magnetBonus':
+                    bonus.magnetBonus += equip.statValue;
+                    break;
+            }
+        }
+
+        return bonus;
     }
 
     // ★ 보스 사망 대형 파티클
@@ -4924,6 +5388,9 @@ class GameScene extends Phaser.Scene {
             level: this.playerState.level,
             weapons: this.playerState.weapons,
             passives: this.playerState.passives,
+            bannedSkills: this.playerState.bannedSkills || [],  // ★ 밴된 스킬 목록
+            rerollCount: this.playerState.rerollCount || 0,     // ★ 리롤 횟수
+            exp: this.playerState.exp,  // ★ 현재 경험치 (리롤 비용)
             callback: (choice) => {
                 if (choice.type === 'weapon') this.playerState.weapons[choice.key] = (this.playerState.weapons[choice.key] || 0) + 1;
                 else {
@@ -4935,6 +5402,20 @@ class GameScene extends Phaser.Scene {
                 this.physics.world.resume();
                 this.time.paused = false;
                 this.tweens.resumeAll();
+            },
+            // ★ 밴 콜백
+            banCallback: (skillKey) => {
+                if (!this.playerState.bannedSkills) this.playerState.bannedSkills = [];
+                if (this.playerState.bannedSkills.length < 3) {
+                    this.playerState.bannedSkills.push(skillKey);
+                }
+            },
+            // ★ 리롤 콜백
+            rerollCallback: (expCost) => {
+                this.playerState.rerollCount = (this.playerState.rerollCount || 0) + 1;
+                if (expCost > 0) {
+                    this.playerState.exp = Math.max(0, this.playerState.exp - expCost);
+                }
             }
         });
     }
@@ -5005,49 +5486,149 @@ class GameScene extends Phaser.Scene {
 // ==========================================
 class LevelUpScene extends Phaser.Scene {
     constructor() { super({ key: 'LevelUpScene' }); }
-    init(data) { this.data = data; }
+    init(data) {
+        this.data = data;
+        this.currentRerollCount = 0;  // 이번 레벨업에서 리롤한 횟수
+    }
 
     create() {
         const w = this.cameras.main.width, h = this.cameras.main.height;
         this.add.rectangle(w/2, h/2, w, h, 0x000000, 0.8);
-        this.add.text(w/2, 50, 'LEVEL UP!', { fontSize: '42px', fontStyle: 'bold', fill: '#7cb342' }).setOrigin(0.5);
-        this.add.text(w/2, 85, `Lv.${this.data.level}`, { fontSize: '20px', fill: '#aaa' }).setOrigin(0.5);
+        this.add.text(w/2, 35, 'LEVEL UP!', { fontSize: '38px', fontStyle: 'bold', fill: '#7cb342' }).setOrigin(0.5);
+        this.add.text(w/2, 65, `Lv.${this.data.level}`, { fontSize: '18px', fill: '#aaa' }).setOrigin(0.5);
+
+        // ★ 밴된 스킬 표시
+        const bannedSkills = this.data.bannedSkills || [];
+        if (bannedSkills.length > 0) {
+            const bannedText = bannedSkills.map(k => {
+                const info = WEAPONS[k] || PASSIVES[k];
+                return info ? info.icon : '?';
+            }).join(' ');
+            this.add.text(w/2, 88, `🚫 밴: ${bannedText}`, { fontSize: '12px', fill: '#ff4444' }).setOrigin(0.5);
+        }
+
+        // 선택지 생성
+        this.displayChoices();
+
+        // ★★★ 리롤 버튼 ★★★
+        const rerollCost = this.currentRerollCount === 0 ? 0 : 10;  // 첫 리롤 무료, 이후 경험치 10 소모
+        const canReroll = rerollCost === 0 || (this.data.exp || 0) >= rerollCost;
+
+        const rerollBtn = this.add.rectangle(w/2 - 100, h - 50, 150, 40, canReroll ? 0x9c27b0 : 0x555555)
+            .setStrokeStyle(2, canReroll ? 0xce93d8 : 0x777777)
+            .setInteractive({ useHandCursor: canReroll });
+
+        const rerollLabel = rerollCost === 0 ? '🔄 리롤 (무료)' : `🔄 리롤 (-${rerollCost}EXP)`;
+        this.add.text(w/2 - 100, h - 50, rerollLabel, {
+            fontSize: '14px', fontStyle: 'bold', fill: canReroll ? '#fff' : '#888'
+        }).setOrigin(0.5);
+
+        if (canReroll) {
+            rerollBtn.on('pointerover', () => rerollBtn.setFillStyle(0xab47bc));
+            rerollBtn.on('pointerout', () => rerollBtn.setFillStyle(0x9c27b0));
+            rerollBtn.on('pointerdown', () => this.doReroll(rerollCost));
+        }
+
+        // ★★★ 밴 안내 ★★★
+        this.add.text(w/2 + 100, h - 50, '카드 우클릭: 밴 (최대 3개)', {
+            fontSize: '12px', fill: '#aaa'
+        }).setOrigin(0.5);
+    }
+
+    // ★ 선택지 카드 표시
+    displayChoices() {
+        const w = this.cameras.main.width, h = this.cameras.main.height;
+
+        // 기존 카드 제거
+        if (this.choiceCards) {
+            this.choiceCards.forEach(obj => obj.destroy());
+        }
+        this.choiceCards = [];
 
         const choices = this.generateChoices();
-        const cw = 180, gap = 25;
+        this.currentChoices = choices;
+
+        const cw = 170, gap = 20;
         const startX = w/2 - ((choices.length-1) * (cw+gap)) / 2;
 
         choices.forEach((c, i) => {
             const x = startX + i*(cw+gap);
-            const card = this.add.rectangle(x, 280, cw, 230, 0x2a2a4a).setStrokeStyle(3, 0x00a8e8).setInteractive({ useHandCursor: true });
+            const card = this.add.rectangle(x, 260, cw, 220, 0x2a2a4a)
+                .setStrokeStyle(3, 0x00a8e8)
+                .setInteractive({ useHandCursor: true });
+            this.choiceCards.push(card);
 
             const info = c.type === 'weapon' ? WEAPONS[c.key] : PASSIVES[c.key];
             const lvl = c.type === 'weapon' ? (this.data.weapons[c.key] || 0) : (this.data.passives[c.key] || 0);
 
-            this.add.text(x, 200, info.icon, { fontSize: '36px' }).setOrigin(0.5);
-            this.add.text(x, 245, info.name, { fontSize: '14px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-            this.add.text(x, 265, c.isNew ? 'NEW!' : `Lv.${lvl+1}`, { fontSize: '12px', fill: c.isNew ? '#ff0' : '#00a8e8' }).setOrigin(0.5);
-            this.add.text(x, 295, info.desc, { fontSize: '10px', fill: '#aaa', wordWrap: { width: 160 }, align: 'center' }).setOrigin(0.5);
+            const iconText = this.add.text(x, 180, info.icon, { fontSize: '32px' }).setOrigin(0.5);
+            const nameText = this.add.text(x, 220, info.name, { fontSize: '13px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
+            const lvlText = this.add.text(x, 238, c.isNew ? 'NEW!' : `Lv.${lvl+1}`, { fontSize: '11px', fill: c.isNew ? '#ff0' : '#00a8e8' }).setOrigin(0.5);
+            const descText = this.add.text(x, 268, info.desc, { fontSize: '10px', fill: '#aaa', wordWrap: { width: 150 }, align: 'center' }).setOrigin(0.5);
+            this.choiceCards.push(iconText, nameText, lvlText, descText);
 
-            // ★★★ 시너지 힌트 표시 ★★★
+            // 시너지 힌트
             const synergyHint = this.getSynergyHint(c.key);
             if (synergyHint) {
-                this.add.text(x, 340, '💡 시너지', { fontSize: '9px', fill: '#ff6b6b' }).setOrigin(0.5);
-                this.add.text(x, 355, synergyHint.partnerName, { fontSize: '9px', fill: '#ffd700' }).setOrigin(0.5);
-                this.add.text(x, 370, `+${synergyHint.bonus}`, { fontSize: '8px', fill: '#7cb342' }).setOrigin(0.5);
+                const sLabel = this.add.text(x, 310, '💡 시너지', { fontSize: '9px', fill: '#ff6b6b' }).setOrigin(0.5);
+                const sPartner = this.add.text(x, 325, synergyHint.partnerName, { fontSize: '8px', fill: '#ffd700' }).setOrigin(0.5);
+                const sBonus = this.add.text(x, 338, `+${synergyHint.bonus}`, { fontSize: '8px', fill: '#7cb342' }).setOrigin(0.5);
+                this.choiceCards.push(sLabel, sPartner, sBonus);
             }
 
+            // 좌클릭: 선택
             card.on('pointerover', () => card.setFillStyle(0x3a3a5a));
             card.on('pointerout', () => card.setFillStyle(0x2a2a4a));
-            card.on('pointerdown', () => { this.data.callback(c); this.scene.stop(); });
+            card.on('pointerdown', (pointer) => {
+                if (pointer.rightButtonDown()) {
+                    // 우클릭: 밴
+                    this.doBan(c.key);
+                } else {
+                    // 좌클릭: 선택
+                    this.data.callback(c);
+                    this.scene.stop();
+                }
+            });
         });
+    }
+
+    // ★ 리롤 실행
+    doReroll(expCost) {
+        this.currentRerollCount++;
+        if (this.data.rerollCallback) {
+            this.data.rerollCallback(expCost);
+            this.data.exp = Math.max(0, (this.data.exp || 0) - expCost);
+        }
+        // 화면 다시 그리기
+        this.scene.restart(this.data);
+    }
+
+    // ★ 밴 실행
+    doBan(skillKey) {
+        const bannedSkills = this.data.bannedSkills || [];
+        if (bannedSkills.length >= 3) {
+            // 이미 3개 밴됨
+            return;
+        }
+        if (bannedSkills.includes(skillKey)) {
+            // 이미 밴됨
+            return;
+        }
+
+        // 밴 콜백 호출
+        if (this.data.banCallback) {
+            this.data.banCallback(skillKey);
+            this.data.bannedSkills = [...bannedSkills, skillKey];
+        }
+
+        // 선택지 다시 생성
+        this.displayChoices();
     }
 
     // ★ 시너지 힌트 찾기
     getSynergyHint(skillKey) {
         for (const synergy of SYNERGIES) {
             if (synergy.requires.includes(skillKey)) {
-                // 파트너 스킬 찾기
                 const partnerKey = synergy.requires.find(k => k !== skillKey);
                 const partnerInfo = WEAPONS[partnerKey] || PASSIVES[partnerKey];
                 if (partnerInfo) {
@@ -5061,11 +5642,32 @@ class LevelUpScene extends Phaser.Scene {
         return null;
     }
 
+    // ★ 선택지 생성 (밴된 스킬 제외)
     generateChoices() {
         const choices = [];
-        Object.keys(this.data.weapons).forEach(k => { if (this.data.weapons[k] < WEAPONS[k].maxLevel) choices.push({ type: 'weapon', key: k }); });
-        Object.keys(WEAPONS).forEach(k => { if (!this.data.weapons[k]) choices.push({ type: 'weapon', key: k, isNew: true }); });
-        Object.keys(PASSIVES).forEach(k => { if ((this.data.passives[k] || 0) < PASSIVES[k].maxLevel) choices.push({ type: 'passive', key: k }); });
+        const bannedSkills = this.data.bannedSkills || [];
+
+        // 기존 무기 레벨업 (밴되지 않은 것만)
+        Object.keys(this.data.weapons).forEach(k => {
+            if (this.data.weapons[k] < WEAPONS[k].maxLevel && !bannedSkills.includes(k)) {
+                choices.push({ type: 'weapon', key: k });
+            }
+        });
+
+        // 새 무기 (밴되지 않은 것만)
+        Object.keys(WEAPONS).forEach(k => {
+            if (!this.data.weapons[k] && !bannedSkills.includes(k)) {
+                choices.push({ type: 'weapon', key: k, isNew: true });
+            }
+        });
+
+        // 패시브 (밴되지 않은 것만)
+        Object.keys(PASSIVES).forEach(k => {
+            if ((this.data.passives[k] || 0) < PASSIVES[k].maxLevel && !bannedSkills.includes(k)) {
+                choices.push({ type: 'passive', key: k });
+            }
+        });
+
         Phaser.Utils.Array.Shuffle(choices);
         return choices.slice(0, 3);
     }
@@ -5094,7 +5696,91 @@ class GameOverScene extends Phaser.Scene {
 
         const btn = this.add.rectangle(w/2, h/2+120, 180, 45, 0x00a8e8).setInteractive({ useHandCursor: true });
         this.add.text(w/2, h/2+120, '다시 도전', { fontSize: '20px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-        btn.on('pointerdown', () => this.scene.start('GameScene'));
+        // btn.on('pointerdown', () => this.scene.start('GameScene'));  // ★ 기존 코드
+        btn.on('pointerdown', () => this.scene.start('ClassSelectScene'));  // ★ 클래스 선택으로 이동
+    }
+}
+
+// ==========================================
+// ★ FloorClearScene (층 클리어)
+// ==========================================
+class FloorClearScene extends Phaser.Scene {
+    constructor() { super({ key: 'FloorClearScene' }); }
+    init(data) { this.data = data; }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+
+        // 배경 (반투명)
+        this.add.rectangle(w/2, h/2, w, h, 0x000000, 0.85);
+
+        // 층 클리어 축하
+        const floorInfo = FLOOR_CONFIG[this.data.floor - 1];
+        this.add.text(w/2, h/2 - 100, '🎉 층 클리어! 🎉', {
+            fontSize: '48px', fontStyle: 'bold', fill: '#ffd700',
+            stroke: '#000', strokeThickness: 4
+        }).setOrigin(0.5);
+
+        this.add.text(w/2, h/2 - 40, floorInfo.name, {
+            fontSize: '24px', fontStyle: 'bold', fill: '#fff'
+        }).setOrigin(0.5);
+
+        // 보상 표시
+        this.add.text(w/2, h/2 + 20, '보상:', {
+            fontSize: '18px', fill: '#aaa'
+        }).setOrigin(0.5);
+
+        // 획득 장비 표시
+        if (this.data.equipment) {
+            const gradeInfo = EQUIPMENT_GRADES[this.data.equipment.grade];
+            const slotInfo = EQUIPMENT_SLOTS[this.data.equipment.slot];
+            this.add.text(w/2, h/2 + 55, `${slotInfo.icon} ${this.data.equipment.name}`, {
+                fontSize: '20px', fontStyle: 'bold',
+                fill: '#' + gradeInfo.color.toString(16).padStart(6, '0')
+            }).setOrigin(0.5);
+
+            this.add.text(w/2, h/2 + 80, this.data.equipment.desc, {
+                fontSize: '14px', fill: '#7cb342'
+            }).setOrigin(0.5);
+        }
+
+        // 다음 층 버튼
+        if (this.data.floor < 10) {
+            const nextFloor = FLOOR_CONFIG[this.data.floor];
+            const nextBtn = this.add.rectangle(w/2, h/2 + 140, 250, 50, 0x00a8e8)
+                .setInteractive({ useHandCursor: true });
+
+            this.add.text(w/2, h/2 + 140, `다음 층: ${nextFloor.name}`, {
+                fontSize: '18px', fontStyle: 'bold', fill: '#fff'
+            }).setOrigin(0.5);
+
+            nextBtn.on('pointerdown', () => {
+                this.scene.stop();
+                this.data.callback();
+            });
+        } else {
+            // 최종 클리어!
+            this.add.text(w/2, h/2 + 140, '🏆 바벨탑 완전 정화! 🏆', {
+                fontSize: '28px', fontStyle: 'bold', fill: '#ff6b6b'
+            }).setOrigin(0.5);
+
+            const endBtn = this.add.rectangle(w/2, h/2 + 200, 180, 45, 0x7cb342)
+                .setInteractive({ useHandCursor: true });
+            this.add.text(w/2, h/2 + 200, '완료', {
+                fontSize: '20px', fontStyle: 'bold', fill: '#fff'
+            }).setOrigin(0.5);
+
+            endBtn.on('pointerdown', () => {
+                this.scene.start('GameOverScene', {
+                    victory: true,
+                    time: this.data.totalTime,
+                    kills: this.data.kills,
+                    level: this.data.level,
+                    floor: 10
+                });
+            });
+        }
     }
 }
 
@@ -5108,7 +5794,7 @@ const config = {
     parent: 'game-container',
     backgroundColor: '#1a1a2e',
     physics: { default: 'arcade', arcade: { debug: false, gravity: { x: 0, y: 0 } } },
-    scene: [BootScene, TitleScene, GameScene, LevelUpScene, GameOverScene],
+    scene: [BootScene, TitleScene, ClassSelectScene, GameScene, LevelUpScene, GameOverScene, FloorClearScene],
     render: { antialias: false, pixelArt: true, roundPixels: true },
     fps: { target: 60, forceSetTimeOut: false },
     input: { activePointers: 3 }
