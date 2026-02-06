@@ -104,7 +104,7 @@ const BOSS_TYPES = {
 const ITEM_TYPES = {
     health: { name: '체력팩', color: 0xe53935, effect: 30, dropRate: 0.15 },
     magnet: { name: '자석', color: 0x9c27b0, effect: 'magnet', dropRate: 0.10 },
-    bomb: { name: '폭탄', color: 0xff5722, effect: 'bomb', dropRate: 0.05 },
+    // bomb: { name: '폭탄', color: 0xff5722, effect: 'bomb', dropRate: 0.05 },  // ★ 폭탄 제거
     invincible: { name: '무적', color: 0xffd600, effect: 'invincible', dropRate: 0.05 },
     chest: { name: '보물상자', color: 0xffc107, effect: 'chest', dropRate: 0 }  // 보스 전용
 };
