@@ -2503,11 +2503,11 @@ class TitleScene extends Phaser.Scene {
         // btn.on('pointerdown', () => this.scene.start('GameScene'));  // ★ 기존 코드 (ClassSelectScene으로 변경)
         btn.on('pointerdown', () => this.scene.start('ClassSelectScene'));
 
-        // ★ 전체화면 버튼 추가 (모바일 대응)
-        const fullscreenBtn = this.add.rectangle(w - 60, 40, 100, 36, 0x4a4a6a)
+        // ★ 전체화면 버튼 추가 (가운데 위쪽으로 이동)
+        const fullscreenBtn = this.add.rectangle(w/2, 40, 120, 40, 0x4a4a6a)
             .setInteractive({ useHandCursor: true })
             .setStrokeStyle(2, 0x00a8e8);
-        const fullscreenText = this.add.text(w - 60, 40, '⛶ 전체화면', { fontSize: '14px', fill: '#fff' }).setOrigin(0.5);
+        const fullscreenText = this.add.text(w/2, 40, '⛶ 전체화면', { fontSize: '16px', fill: '#fff' }).setOrigin(0.5);
 
         fullscreenBtn.on('pointerdown', () => {
             if (this.scale.isFullscreen) {
@@ -2932,10 +2932,17 @@ class GameScene extends Phaser.Scene {
             stroke: '#000', strokeThickness: 2
         }).setOrigin(0, 0.5);
 
+        // ★ 난이도 표시
+        const diffInfo = this.difficultyConfig || DIFFICULTY.normal;
+        this.diffText = this.add.text(620, hpY, `[${diffInfo.name}]`, {
+            fontSize: '13px', fontStyle: 'bold', fill: '#' + diffInfo.color.toString(16).padStart(6, '0'),
+            stroke: '#000', strokeThickness: 2
+        }).setOrigin(0, 0.5);
+
         // FPS
         this.fpsText = this.add.text(CONFIG.WIDTH - 20, CONFIG.HEIGHT - 20, 'FPS: 60', { fontSize: '12px', fill: '#0f0' }).setOrigin(1, 0.5);
 
-        this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.classText, this.floorText, this.fpsText]);
+        this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.classText, this.floorText, this.diffText, this.fpsText]);
 
         // ★★★ 전체화면 버튼 추가 (게임 중에도 사용 가능) ★★★
         this.fullscreenBtn = this.add.text(CONFIG.WIDTH - 170, hpY, '⛶', {
@@ -5088,6 +5095,15 @@ class GameScene extends Phaser.Scene {
         const barWidth = 80;
         const barHeight = 8;
 
+        // ★ 보스 이름 표시
+        boss.nameText = this.add.text(boss.x, boss.y - boss.bossRadius - 30, boss.bossName, {
+            fontSize: '14px',
+            fontStyle: 'bold',
+            fill: '#ffeb3b',
+            stroke: '#000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setDepth(9);
+
         boss.hpBarBg = this.add.rectangle(boss.x, boss.y - boss.bossRadius - 15, barWidth, barHeight, 0x333333)
             .setDepth(9);
         boss.hpBarFill = this.add.rectangle(boss.x, boss.y - boss.bossRadius - 15, barWidth - 2, barHeight - 2, 0xff0000)
@@ -5110,7 +5126,7 @@ class GameScene extends Phaser.Scene {
                 boss.setVelocity(dx * invDist * boss.bossSpeed, dy * invDist * boss.bossSpeed);
             }
 
-            // HP바 위치 업데이트
+            // HP바 + 이름 위치 업데이트
             if (boss.hpBarBg && boss.hpBarFill) {
                 boss.hpBarBg.setPosition(boss.x, boss.y - boss.bossRadius - 15);
                 boss.hpBarFill.setPosition(boss.x, boss.y - boss.bossRadius - 15);
@@ -5118,6 +5134,10 @@ class GameScene extends Phaser.Scene {
                 // HP 비율에 따른 바 크기
                 const hpRatio = boss.hp / boss.maxHp;
                 boss.hpBarFill.width = 78 * hpRatio;
+            }
+            // ★ 보스 이름 위치 업데이트
+            if (boss.nameText) {
+                boss.nameText.setPosition(boss.x, boss.y - boss.bossRadius - 30);
             }
 
             // 사망 처리
@@ -5134,9 +5154,10 @@ class GameScene extends Phaser.Scene {
         const bossY = boss.y;
         const bossColor = BOSS_TYPES[boss.bossType]?.color || 0xff0000;
 
-        // HP바 제거
+        // HP바 + 이름 제거
         if (boss.hpBarBg) boss.hpBarBg.destroy();
         if (boss.hpBarFill) boss.hpBarFill.destroy();
+        if (boss.nameText) boss.nameText.destroy();
 
         // ★ Game Juice: 강력한 히트 스톱
         if (!this.hitStopActive) {
