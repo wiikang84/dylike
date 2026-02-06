@@ -109,46 +109,46 @@ const ITEM_TYPES = {
     chest: { name: '보물상자', color: 0xffc107, effect: 'chest', dropRate: 0 }  // 보스 전용
 };
 
-// ========== 무기 정의 (12종) ==========
+// ========== 무기 정의 (12종) - 무제한 스케일링 ==========
 const WEAPONS = {
-    // 기존 4종
-    waterGun: { name: '고압 세척기', icon: '💧', desc: '물 발사', baseDamage: 10, baseCooldown: 400, projectileSpeed: 500, maxLevel: 8 },
-    circleField: { name: '정화 필드', icon: '🔵', desc: '주변 정화', baseDamage: 5, baseRadius: 80, orbCount: 3, maxLevel: 8 },
-    homingMissile: { name: '중화제 탄', icon: '🎯', desc: '유도탄', baseDamage: 25, baseCooldown: 2000, projectileSpeed: 250, maxLevel: 8 },
-    dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 8, baseCooldown: 100, range: 250, angle: 60, maxLevel: 8 },  // range 150→250
+    // 기존 4종 (maxLevel 99로 증가)
+    waterGun: { name: '고압 세척기', icon: '💧', desc: '물 발사', baseDamage: 10, baseCooldown: 400, projectileSpeed: 500, maxLevel: 99 },
+    circleField: { name: '정화 필드', icon: '🔵', desc: '주변 정화', baseDamage: 5, baseRadius: 80, orbCount: 3, maxLevel: 99 },
+    homingMissile: { name: '중화제 탄', icon: '🎯', desc: '유도탄', baseDamage: 25, baseCooldown: 2000, projectileSpeed: 250, maxLevel: 99 },
+    dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 8, baseCooldown: 100, range: 300, angle: 60, maxLevel: 99 },
 
-    // ★ 신규 8종
-    blower: { name: '산업용 송풍기', icon: '💨', desc: '적 밀치기+데미지', baseDamage: 8, baseCooldown: 800, range: 180, angle: 60, knockback: 300, maxLevel: 8 },
-    detector: { name: '오염측정기', icon: '📡', desc: '연쇄 번개 공격', baseDamage: 15, baseCooldown: 1200, chainCount: 3, chainRange: 150, maxLevel: 8 },
-    gloves: { name: '보호장갑', icon: '🧤', desc: '빠른 펀치 공격', baseDamage: 12, baseCooldown: 200, range: 60, angle: 120, maxLevel: 8 },
-    spray: { name: '소독스프레이', icon: '🧴', desc: '정화 영역 생성', baseDamage: 3, baseCooldown: 3000, radius: 80, duration: 5000, maxLevel: 8 },
-    cone: { name: '안전콘', icon: '🔶', desc: '설치 후 폭발', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 8 },
-    truck: { name: '청소차', icon: '🚛', desc: '돌진 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 8 },
-    drone: { name: '환경드론', icon: '🚁', desc: '자동 순찰 공격', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 8 },
-    pipe: { name: '폐수파이프', icon: '🔧', desc: '관통 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 8 }
+    // ★ 신규 8종 (maxLevel 99)
+    blower: { name: '산업용 송풍기', icon: '💨', desc: '적 밀치기+데미지', baseDamage: 8, baseCooldown: 800, range: 180, angle: 60, knockback: 300, maxLevel: 99 },
+    detector: { name: '오염측정기', icon: '📡', desc: '연쇄 번개 공격', baseDamage: 15, baseCooldown: 1200, chainCount: 3, chainRange: 150, maxLevel: 99 },
+    gloves: { name: '보호장갑', icon: '🧤', desc: '빠른 펀치 공격', baseDamage: 12, baseCooldown: 200, range: 60, angle: 120, maxLevel: 99 },
+    spray: { name: '소독스프레이', icon: '🧴', desc: '정화 영역 생성', baseDamage: 3, baseCooldown: 3000, radius: 80, duration: 5000, maxLevel: 99 },
+    cone: { name: '안전콘', icon: '🔶', desc: '설치 후 폭발', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },
+    truck: { name: '청소차', icon: '🚛', desc: '돌진 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },
+    drone: { name: '환경드론', icon: '🚁', desc: '자동 순찰 공격', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 99 },
+    pipe: { name: '폐수파이프', icon: '🔧', desc: '관통 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 99 }
 };
 
-// ========== 패시브 스킬 (16종) ==========
+// ========== 패시브 스킬 (16종) - 무제한 스케일링 ==========
 const PASSIVES = {
-    // 기존 5종
-    damage: { name: '정화력', icon: '⚔️', desc: '데미지 +10%', maxLevel: 5, effect: 0.1 },
-    speed: { name: '이동속도', icon: '👟', desc: '속도 +12%', maxLevel: 5, effect: 0.12 },
-    maxHp: { name: '체력', icon: '🛡️', desc: 'HP +20', maxLevel: 5, effect: 20 },
-    magnet: { name: '자석', icon: '🧲', desc: '수집범위 +40%', maxLevel: 5, effect: 0.4 },
-    regen: { name: '재생', icon: '💚', desc: '초당 HP 2회복', maxLevel: 3, effect: 2 },
+    // 기존 5종 (maxLevel 99로 증가)
+    damage: { name: '정화력', icon: '⚔️', desc: '데미지 +10%', maxLevel: 99, effect: 0.1 },
+    speed: { name: '이동속도', icon: '👟', desc: '속도 +8%', maxLevel: 99, effect: 0.08 },
+    maxHp: { name: '체력', icon: '🛡️', desc: 'HP +25', maxLevel: 99, effect: 25 },
+    magnet: { name: '자석', icon: '🧲', desc: '수집범위 +30%', maxLevel: 99, effect: 0.3 },
+    regen: { name: '재생', icon: '💚', desc: '초당 HP +1', maxLevel: 99, effect: 1 },
 
-    // ★ 신규 11종
-    cooldown: { name: '효율성', icon: '⚡', desc: '쿨다운 -8%', maxLevel: 5, effect: 0.08 },
-    projectile: { name: '투사체', icon: '✨', desc: '투사체 +1', maxLevel: 3, effect: 1 },
-    area: { name: '범위', icon: '🎆', desc: '공격범위 +12%', maxLevel: 5, effect: 0.12 },
-    growth: { name: '숙련도', icon: '📈', desc: '경험치 +10%', maxLevel: 5, effect: 0.1 },
-    armor: { name: '방어력', icon: '🔒', desc: '받는 데미지 -1', maxLevel: 5, effect: 1 },
-    critChance: { name: '크리티컬', icon: '💥', desc: '치명타 확률 +5%', maxLevel: 5, effect: 0.05 },
-    critDamage: { name: '치명타력', icon: '🔥', desc: '치명타 데미지 +20%', maxLevel: 5, effect: 0.2 },
-    duration: { name: '지속시간', icon: '⏱️', desc: '효과 지속 +12%', maxLevel: 5, effect: 0.12 },
-    luck: { name: '행운', icon: '🍀', desc: '아이템 드롭률 +8%', maxLevel: 5, effect: 0.08 },
-    pierce: { name: '관통', icon: '🗡️', desc: '투사체 관통 +1', maxLevel: 3, effect: 1 },
-    lifesteal: { name: '흡혈', icon: '🩸', desc: '데미지 2% HP회복', maxLevel: 3, effect: 0.02 }
+    // ★ 신규 11종 (maxLevel 99)
+    cooldown: { name: '효율성', icon: '⚡', desc: '쿨다운 -5%', maxLevel: 99, effect: 0.05 },
+    projectile: { name: '투사체', icon: '✨', desc: '투사체 +1', maxLevel: 99, effect: 1 },
+    area: { name: '범위', icon: '🎆', desc: '공격범위 +10%', maxLevel: 99, effect: 0.1 },
+    growth: { name: '숙련도', icon: '📈', desc: '경험치 +8%', maxLevel: 99, effect: 0.08 },
+    armor: { name: '방어력', icon: '🔒', desc: '받는 데미지 -1', maxLevel: 99, effect: 1 },
+    critChance: { name: '크리티컬', icon: '💥', desc: '치명타 확률 +3%', maxLevel: 99, effect: 0.03 },
+    critDamage: { name: '치명타력', icon: '🔥', desc: '치명타 데미지 +15%', maxLevel: 99, effect: 0.15 },
+    duration: { name: '지속시간', icon: '⏱️', desc: '효과 지속 +10%', maxLevel: 99, effect: 0.1 },
+    luck: { name: '행운', icon: '🍀', desc: '아이템 드롭률 +5%', maxLevel: 99, effect: 0.05 },
+    pierce: { name: '관통', icon: '🗡️', desc: '투사체 관통 +1', maxLevel: 99, effect: 1 },
+    lifesteal: { name: '흡혈', icon: '🩸', desc: '데미지 1% HP회복', maxLevel: 99, effect: 0.01 }
 };
 
 // ==========================================
@@ -2463,19 +2463,30 @@ class GameScene extends Phaser.Scene {
     createHUD() {
         this.hud = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
 
-        // ★ UI 간격 넓힘 (상단 여백 증가)
-        const topMargin = 15;
-        const hpY = topMargin;
-        const expY = topMargin + 30;  // HP바 아래 간격 증가
+        // ★★★ UI 크기 대폭 증가 ★★★
+        const topMargin = 12;
+        const hpY = topMargin + 5;
+        const expY = topMargin + 42;  // HP바 아래 간격 증가
 
-        this.hpBarBg = this.add.rectangle(150, hpY, 220, 22, COLORS.HP_BG);
-        this.hpBar = this.add.rectangle(42, hpY, 214, 18, COLORS.HP_BAR).setOrigin(0, 0.5);
-        this.hpText = this.add.text(150, hpY, '100/100', { fontSize: '13px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-        this.levelText = this.add.text(280, hpY, 'Lv.1', { fontSize: '18px', fontStyle: 'bold', fill: '#00a8e8' }).setOrigin(0, 0.5);
-        this.timeText = this.add.text(CONFIG.WIDTH - 80, hpY, '00:00', { fontSize: '18px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5, 0.5);
-        this.expBarBg = this.add.rectangle(CONFIG.WIDTH/2, expY, CONFIG.WIDTH - 80, 10, COLORS.EXP_BG);
-        this.expBar = this.add.rectangle(40, expY, 0, 8, COLORS.EXP_BAR).setOrigin(0, 0.5);
-        this.killText = this.add.text(CONFIG.WIDTH - 20, expY + 15, '정화: 0', { fontSize: '12px', fill: '#aaa' }).setOrigin(1, 0.5);
+        // HP바 (더 크게)
+        this.hpBarBg = this.add.rectangle(160, hpY, 280, 28, COLORS.HP_BG).setStrokeStyle(2, 0x000000);
+        this.hpBar = this.add.rectangle(22, hpY, 274, 24, COLORS.HP_BAR).setOrigin(0, 0.5);
+        this.hpText = this.add.text(160, hpY, '100/100', { fontSize: '16px', fontStyle: 'bold', fill: '#fff', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5);
+
+        // 레벨 (더 크게)
+        this.levelText = this.add.text(320, hpY, 'Lv.1', { fontSize: '22px', fontStyle: 'bold', fill: '#00a8e8', stroke: '#000', strokeThickness: 2 }).setOrigin(0, 0.5);
+
+        // 타이머 (더 크게)
+        this.timeText = this.add.text(CONFIG.WIDTH - 70, hpY, '00:00', { fontSize: '22px', fontStyle: 'bold', fill: '#fff', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5, 0.5);
+
+        // 경험치바 (더 크게)
+        this.expBarBg = this.add.rectangle(CONFIG.WIDTH/2, expY, CONFIG.WIDTH - 100, 14, COLORS.EXP_BG).setStrokeStyle(2, 0x000000);
+        this.expBar = this.add.rectangle(50, expY, 0, 12, COLORS.EXP_BAR).setOrigin(0, 0.5);
+
+        // 킬 카운트 (더 크게)
+        this.killText = this.add.text(CONFIG.WIDTH - 20, expY + 20, '정화: 0', { fontSize: '14px', fontStyle: 'bold', fill: '#aaa' }).setOrigin(1, 0.5);
+
+        // FPS
         this.fpsText = this.add.text(CONFIG.WIDTH - 20, CONFIG.HEIGHT - 20, 'FPS: 60', { fontSize: '12px', fill: '#0f0' }).setOrigin(1, 0.5);
 
         this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.fpsText]);
@@ -2492,34 +2503,35 @@ class GameScene extends Phaser.Scene {
         this.skillUI = this.add.container(10, 65).setScrollFactor(0).setDepth(100);  // ★ 위치 조정
         this.skillIcons = [];  // 아이콘 저장용
 
-        // 배경 패널
-        const panelBg = this.add.rectangle(0, 0, 50, 280, 0x000000, 0.5)
+        // ★ 배경 패널 (크기 증가: 50→65, 높이 증가)
+        const panelBg = this.add.rectangle(0, 0, 65, 320, 0x000000, 0.5)
             .setOrigin(0, 0)
             .setStrokeStyle(1, 0x00a8e8, 0.5);
         this.skillUI.add(panelBg);
 
-        // "스킬" 라벨
-        const label = this.add.text(25, 8, '스킬', {
-            fontSize: '10px',
+        // ★ "스킬" 라벨 (크기 증가)
+        const label = this.add.text(32, 10, '스킬', {
+            fontSize: '12px',
             fontStyle: 'bold',
             fill: '#00a8e8'
         }).setOrigin(0.5);
         this.skillUI.add(label);
 
-        // 구분선 (무기/패시브)
-        const divider = this.add.rectangle(25, 145, 40, 1, 0x00a8e8, 0.5);
+        // ★ 구분선 (무기/패시브) - 위치 조정
+        const divider = this.add.rectangle(32, 165, 55, 2, 0x00a8e8, 0.5);
         this.skillUI.add(divider);
     }
 
-    // ★ 스킬 UI 업데이트
+    // ★ 스킬 UI 업데이트 (크기 증가)
     updateSkillUI() {
         // 기존 아이콘 제거
         this.skillIcons.forEach(icon => icon.destroy());
         this.skillIcons = [];
 
-        const startY = 25;
-        const iconSize = 28;
-        const gap = 36;  // 간격 늘림
+        const startY = 30;
+        const iconSize = 36;   // ★ 28 → 36 확대
+        const gap = 44;        // ★ 36 → 44 간격 확대
+        const centerX = 32;    // ★ 25 → 32 중앙 정렬
         let idx = 0;
 
         // 무기 표시 (상단)
@@ -2531,30 +2543,30 @@ class GameScene extends Phaser.Scene {
 
                 // 아이콘 배경 (MAX면 금색 테두리)
                 const borderColor = isMax ? 0xffd700 : 0x00a8e8;
-                const bg = this.add.rectangle(25, y, iconSize, iconSize, 0x1a1a2e, 0.8)
+                const bg = this.add.rectangle(centerX, y, iconSize, iconSize, 0x1a1a2e, 0.8)
                     .setStrokeStyle(isMax ? 3 : 2, borderColor);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
                 // MAX면 배경 빛남 효과
                 if (isMax) {
-                    const glow = this.add.rectangle(25, y, iconSize + 4, iconSize + 4, 0xffd700, 0.2);
+                    const glow = this.add.rectangle(centerX, y, iconSize + 6, iconSize + 6, 0xffd700, 0.2);
                     this.skillUI.add(glow);
                     this.skillIcons.push(glow);
                 }
 
-                // 아이콘 (이모지)
-                const icon = this.add.text(25, y - 2, WEAPONS[key].icon, {
-                    fontSize: '16px'
+                // 아이콘 (이모지) ★ 폰트 크기 증가
+                const icon = this.add.text(centerX, y - 2, WEAPONS[key].icon, {
+                    fontSize: '20px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시 (MAX 또는 숫자/최대)
-                const lvDisplayText = isMax ? 'MAX' : `${level}/${maxLevel}`;
+                // 레벨 표시 (MAX 또는 숫자/최대) ★ 폰트 크기 증가
+                const lvDisplayText = isMax ? 'MAX' : `Lv.${level}`;
                 const lvColor = isMax ? '#ffd700' : '#00a8e8';
-                const lvText = this.add.text(25, y + 12, lvDisplayText, {
-                    fontSize: '8px',
+                const lvText = this.add.text(centerX, y + 14, lvDisplayText, {
+                    fontSize: '10px',
                     fontStyle: 'bold',
                     fill: lvColor
                 }).setOrigin(0.5);
@@ -2562,7 +2574,7 @@ class GameScene extends Phaser.Scene {
                 this.skillIcons.push(lvText);
 
                 idx++;
-                if (idx >= 4) break;  // 최대 4개 무기
+                if (idx >= 3) break;  // ★ 최대 3개 무기 (크기 증가로 인해)
             }
         }
 
@@ -2570,36 +2582,36 @@ class GameScene extends Phaser.Scene {
         idx = 0;
         for (const [key, level] of Object.entries(this.playerState.passives)) {
             if (level > 0 && PASSIVES[key]) {
-                const y = 175 + idx * gap;  // 위치 조정
+                const y = 180 + idx * gap;  // ★ 위치 조정
                 const maxLevel = PASSIVES[key].maxLevel || 5;
                 const isMax = level >= maxLevel;
 
                 // 아이콘 배경 (MAX면 금색 테두리)
                 const borderColor = isMax ? 0xffd700 : 0x7cb342;
-                const bg = this.add.rectangle(25, y, iconSize, iconSize, 0x1a1a2e, 0.8)
+                const bg = this.add.rectangle(centerX, y, iconSize, iconSize, 0x1a1a2e, 0.8)
                     .setStrokeStyle(isMax ? 3 : 2, borderColor);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
                 // MAX면 배경 빛남 효과
                 if (isMax) {
-                    const glow = this.add.rectangle(25, y, iconSize + 4, iconSize + 4, 0xffd700, 0.2);
+                    const glow = this.add.rectangle(centerX, y, iconSize + 6, iconSize + 6, 0xffd700, 0.2);
                     this.skillUI.add(glow);
                     this.skillIcons.push(glow);
                 }
 
-                // 아이콘 (이모지)
-                const icon = this.add.text(25, y - 2, PASSIVES[key].icon, {
-                    fontSize: '16px'
+                // 아이콘 (이모지) ★ 폰트 크기 증가
+                const icon = this.add.text(centerX, y - 2, PASSIVES[key].icon, {
+                    fontSize: '20px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시 (MAX 또는 숫자/최대)
-                const lvDisplayText = isMax ? 'MAX' : `${level}/${maxLevel}`;
+                // 레벨 표시 (MAX 또는 숫자/최대) ★ 폰트 크기 증가
+                const lvDisplayText = isMax ? 'MAX' : `Lv.${level}`;
                 const lvColor = isMax ? '#ffd700' : '#7cb342';
-                const lvText = this.add.text(25, y + 12, lvDisplayText, {
-                    fontSize: '8px',
+                const lvText = this.add.text(centerX, y + 14, lvDisplayText, {
+                    fontSize: '10px',
                     fontStyle: 'bold',
                     fill: lvColor
                 }).setOrigin(0.5);
@@ -2607,7 +2619,7 @@ class GameScene extends Phaser.Scene {
                 this.skillIcons.push(lvText);
 
                 idx++;
-                if (idx >= 4) break;  // 최대 4개 패시브
+                if (idx >= 3) break;  // ★ 최대 3개 패시브 (크기 증가로 인해)
             }
         }
     }
@@ -2730,7 +2742,7 @@ class GameScene extends Phaser.Scene {
 
     updateHUD() {
         const hpPct = this.playerState.hp / this.playerState.maxHp;
-        this.hpBar.width = 214 * hpPct;  // ★ 220-6 = 214
+        this.hpBar.width = 274 * hpPct;  // ★ 280-6 = 274 (UI 확대)
         this.hpText.setText(`${Math.ceil(this.playerState.hp)}/${this.playerState.maxHp}`);
         this.levelText.setText(`Lv.${this.playerState.level}`);
 
@@ -3038,13 +3050,13 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    // ★ 준설호스 (흡입형 범위 공격) - 완전 재설계
+    // ★ 준설호스 (흡입형 범위 공격) - 화면을 채우는 스케일
     fireDredgeHose(lv, dmgBonus) {
-        const dmg = WEAPONS.dredgeHose.baseDamage * (1 + lv * 0.15) * dmgBonus;
-        const range = WEAPONS.dredgeHose.range + lv * 20;  // 레벨당 사거리 증가 (더 길게)
-        const angleWidth = (30 + lv * 3) * Math.PI / 180;  // 30도 기본 (좁은 원뿔)
-        const pullStrength = 5 + lv * 2;  // 끌어당김 강도
-        const slowAmount = 0.3 + lv * 0.05;  // 감속량 (30% + 레벨당 5%)
+        const dmg = WEAPONS.dredgeHose.baseDamage * (1 + lv * 0.25) * dmgBonus;  // ★ 데미지 스케일 증가
+        const range = 300 + lv * 70;  // ★ Lv8 = 860px (거의 화면 전체)
+        const angleWidth = (35 + lv * 5) * Math.PI / 180;  // ★ 각도 더 넓게
+        const pullStrength = 8 + lv * 4;  // ★ 끌어당김 강도 대폭 증가
+        const slowAmount = 0.4 + lv * 0.08;  // ★ 감속량 증가
 
         const px = this.player.x;
         const py = this.player.y;
@@ -3058,74 +3070,103 @@ class GameScene extends Phaser.Scene {
             baseAngle = this.playerFacingAngle || 0;
         }
 
-        // ========== 호스 본체 그리기 (주황+검정 줄무늬) ==========
-        const hoseLength = 80 + lv * 15;  // ★ 레벨당 15px 증가 (최대 200px)
+        // ========== 호스 본체 그리기 (레벨에 따라 거대해짐) ==========
+        const hoseLength = 100 + lv * 55;  // ★ Lv8 = 540px (화면 절반 이상)
+        const hoseThickness = 14 + lv * 2;  // ★ 호스 두께도 증가
         const hoseEndX = px + Math.cos(baseAngle) * hoseLength;
         const hoseEndY = py + Math.sin(baseAngle) * hoseLength;
 
         const hoseGraphics = this.add.graphics().setDepth(12);
 
-        // 호스 외곽 (검정)
-        hoseGraphics.lineStyle(12, 0x1a1a1a, 1);
+        // 호스 외곽 (검정) - 두께 스케일
+        hoseGraphics.lineStyle(hoseThickness + 4, 0x1a1a1a, 1);
         hoseGraphics.beginPath();
         hoseGraphics.moveTo(px, py);
         hoseGraphics.lineTo(hoseEndX, hoseEndY);
         hoseGraphics.stroke();
 
-        // 호스 내부 (주황)
-        hoseGraphics.lineStyle(8, 0xff6f00, 1);
+        // 호스 내부 (주황) - 두께 스케일
+        hoseGraphics.lineStyle(hoseThickness, 0xff6f00, 1);
         hoseGraphics.beginPath();
         hoseGraphics.moveTo(px, py);
         hoseGraphics.lineTo(hoseEndX, hoseEndY);
         hoseGraphics.stroke();
 
-        // 호스 줄무늬 (나선형 느낌)
-        hoseGraphics.lineStyle(2, 0x1a1a1a, 0.6);
-        for (let i = 0; i < 4; i++) {
-            const t = (i + 1) / 5;
+        // 호스 줄무늬 (길이에 비례해서 개수 증가)
+        const stripeCount = Math.floor(hoseLength / 40);
+        hoseGraphics.lineStyle(3, 0x1a1a1a, 0.6);
+        for (let i = 0; i < stripeCount; i++) {
+            const t = (i + 1) / (stripeCount + 1);
             const sx = px + (hoseEndX - px) * t;
             const sy = py + (hoseEndY - py) * t;
-            hoseGraphics.strokeCircle(sx, sy, 5);
+            hoseGraphics.strokeCircle(sx, sy, hoseThickness / 2);
         }
 
-        // ========== 소용돌이 이펙트 (호스 끝) ==========
+        // ========== 소용돌이 이펙트 (레벨에 따라 거대해짐) ==========
         const vortexGraphics = this.add.graphics().setDepth(13);
-        const vortexX = hoseEndX + Math.cos(baseAngle) * 15;
-        const vortexY = hoseEndY + Math.sin(baseAngle) * 15;
+        const vortexDist = 20 + lv * 5;
+        const vortexX = hoseEndX + Math.cos(baseAngle) * vortexDist;
+        const vortexY = hoseEndY + Math.sin(baseAngle) * vortexDist;
+        const vortexBaseSize = 25 + lv * 10;  // ★ 소용돌이 크기 대폭 증가
 
-        // 소용돌이 원들 (회전 느낌)
-        for (let i = 0; i < 3; i++) {
-            const radius = 10 + i * 8;
-            const alpha = 0.5 - i * 0.15;
-            vortexGraphics.lineStyle(3, 0xff8f00, alpha);
+        // 소용돌이 원들 (회전 느낌) - 크기 증가
+        for (let i = 0; i < 5; i++) {
+            const radius = vortexBaseSize + i * (10 + lv * 2);
+            const alpha = 0.6 - i * 0.1;
+            vortexGraphics.lineStyle(4 + lv * 0.5, 0xff8f00, alpha);
             vortexGraphics.beginPath();
             vortexGraphics.arc(vortexX, vortexY, radius,
-                baseAngle - angleWidth/2 + i * 0.2,
-                baseAngle + angleWidth/2 - i * 0.2);
+                baseAngle - angleWidth/2 + i * 0.15,
+                baseAngle + angleWidth/2 - i * 0.15);
             vortexGraphics.stroke();
         }
 
-        // 소용돌이 중심
+        // 소용돌이 중심 (크기 증가)
+        const centerSize = 10 + lv * 3;
         vortexGraphics.fillStyle(0x4a2c00, 0.8);
-        vortexGraphics.fillCircle(vortexX, vortexY, 8);
+        vortexGraphics.fillCircle(vortexX, vortexY, centerSize);
         vortexGraphics.fillStyle(0x1a1a1a, 1);
-        vortexGraphics.fillCircle(vortexX, vortexY, 4);
+        vortexGraphics.fillCircle(vortexX, vortexY, centerSize * 0.5);
 
-        // 호스 진동 효과
+        // ★ 흡입 파티클 이펙트 (나선형으로 빨려들어옴)
+        const particleCount = 6 + lv * 2;
+        for (let i = 0; i < particleCount; i++) {
+            const startDist = range * (0.3 + Math.random() * 0.7);
+            const particleAngle = baseAngle + (Math.random() - 0.5) * angleWidth;
+            const startX = px + Math.cos(particleAngle) * startDist;
+            const startY = py + Math.sin(particleAngle) * startDist;
+            const particleSize = 6 + lv + Math.random() * 4;
+
+            const particle = this.add.circle(startX, startY, particleSize, 0xffab40, 0.8).setDepth(14);
+
+            // 나선형으로 빨려들어오는 애니메이션
+            this.tweens.add({
+                targets: particle,
+                x: vortexX,
+                y: vortexY,
+                scale: 0.2,
+                alpha: 0,
+                duration: 300 + Math.random() * 200,
+                ease: 'Cubic.easeIn',
+                onComplete: () => particle.destroy()
+            });
+        }
+
+        // 호스 진동 효과 (강도 증가)
         this.tweens.add({
             targets: [hoseGraphics, vortexGraphics],
-            x: { from: -2, to: 2 },
-            duration: 50,
+            x: { from: -3 - lv * 0.5, to: 3 + lv * 0.5 },
+            duration: 40,
             yoyo: true,
-            repeat: 1
+            repeat: 2
         });
 
         // 이펙트 페이드아웃
         this.tweens.add({
             targets: [hoseGraphics, vortexGraphics],
             alpha: 0,
-            duration: 120,
-            delay: 30,
+            duration: 150,
+            delay: 50,
             onComplete: () => {
                 hoseGraphics.destroy();
                 vortexGraphics.destroy();
@@ -3899,7 +3940,8 @@ class GameScene extends Phaser.Scene {
 
         // ★ 시간에 따라 스폰 거리 감소 (압박)
         const minutes = this.gameTime / 60000;
-        const baseDist = Math.max(300, 500 - minutes * 15);  // 500 → 최소 300
+        const playerLevel = this.playerState.level;
+        const baseDist = Math.max(250, 500 - minutes * 20);  // 더 빨리 좁아짐
         const dist = baseDist + Math.random() * 100;
 
         const x = this.player.x + Math.cos(angle) * dist;
@@ -3910,31 +3952,39 @@ class GameScene extends Phaser.Scene {
             enemy.setTexture(`enemy_${typeKey}`);
             enemy.setActive(true).setVisible(true);
 
-            // ★ 강화된 스케일링 시스템
+            // ★★★ 대폭 강화된 스케일링 시스템 ★★★
             const timeScale = {
-                hp: 1 + minutes * 0.25,        // 분당 25% HP 증가
-                speed: Math.min(1 + minutes * 0.10, 2.0),  // 분당 10%, 최대 2배
-                damage: 1 + minutes * 0.15     // 분당 15% 데미지 증가
+                hp: 1 + minutes * 0.4,         // ★ 분당 40% HP 증가 (기존 25%)
+                speed: Math.min(1 + minutes * 0.12, 2.5),  // ★ 최대 2.5배
+                damage: 1 + minutes * 0.25,    // ★ 분당 25% 데미지 증가
+                size: 1 + minutes * 0.08       // ★ 신규: 분당 8% 크기 증가
             };
 
             const levelScale = {
-                hp: 1 + this.playerState.level * 0.04,     // 레벨당 4%
-                damage: 1 + this.playerState.level * 0.02  // 레벨당 2%
+                hp: 1 + playerLevel * 0.08,    // ★ 레벨당 8% (기존 4%)
+                damage: 1 + playerLevel * 0.05, // ★ 레벨당 5% (기존 2%)
+                size: 1 + playerLevel * 0.02   // ★ 신규: 레벨당 2% 크기 증가
             };
 
-            // 엘리트 배율
-            const eliteMultiplier = isElite ? { hp: 4, speed: 1.3, damage: 2, exp: 8 } : { hp: 1, speed: 1, damage: 1, exp: 1 };
+            // 엘리트 배율 (더 강력하게)
+            const eliteMultiplier = isElite ?
+                { hp: 5, speed: 1.4, damage: 2.5, exp: 10, size: 1.5 } :
+                { hp: 1, speed: 1, damage: 1, exp: 1, size: 1 };
+
+            // ★ 몬스터 크기 스케일 계산 (시간+레벨에 따라 커짐)
+            const sizeScale = Math.min(timeScale.size * levelScale.size * eliteMultiplier.size, 3.0);  // 최대 3배
 
             enemy.hp = Math.floor(type.hp * timeScale.hp * levelScale.hp * eliteMultiplier.hp);
             enemy.maxHp = enemy.hp;
             enemy.enemySpeed = Math.floor(type.speed * timeScale.speed * eliteMultiplier.speed);
             enemy.enemyDamage = Math.floor(type.damage * timeScale.damage * levelScale.damage * eliteMultiplier.damage);
-            enemy.enemyExp = type.exp * eliteMultiplier.exp;
-            enemy.enemyRadius = type.radius * (isElite ? 1.4 : 1);
+            enemy.enemyExp = Math.ceil(type.exp * eliteMultiplier.exp * (1 + playerLevel * 0.02));  // 경험치도 증가
+            enemy.enemyRadius = type.radius * sizeScale;
             enemy.enemyType = typeKey;
             enemy.isElite = isElite;
+            enemy.sizeScale = sizeScale;
 
-            // 충돌 영역 재설정
+            // 충돌 영역 재설정 (크기에 비례)
             const radius = enemy.enemyRadius;
             enemy.body.setCircle(radius);
             enemy.body.setOffset(
@@ -3942,13 +3992,12 @@ class GameScene extends Phaser.Scene {
                 (enemy.height - radius * 2) / 2
             );
 
-            // ★ 엘리트 외형 (크기 + 빨간 틴트)
+            // ★ 몬스터 크기 적용 (시간+레벨에 따라 몸집 커짐)
+            enemy.setScale(sizeScale);
+
+            // ★ 엘리트 외형 (빨간 틴트)
             if (isElite) {
-                enemy.setScale(1.4);
-                enemy.setTint(0xff6666);
-            } else {
-                enemy.setScale(1);
-                enemy.clearTint();
+                enemy.setTint(0xff4444);
             }
         }
     }
