@@ -151,6 +151,79 @@ const PASSIVES = {
     lifesteal: { name: '흡혈', icon: '🩸', desc: '데미지 1% HP회복', maxLevel: 99, effect: 0.01 }
 };
 
+// ========== ★ 스킬 시너지 시스템 ★ ==========
+// 특정 스킬 조합 시 보너스 효과 발생
+const SYNERGIES = [
+    // 물 계열 시너지
+    {
+        name: '완벽한 정화',
+        icon: '💎',
+        requires: ['waterGun', 'dredgeHose'],  // 고압 세척기 + 준설호스
+        bonus: { damage: 0.25, desc: '물 공격 데미지 +25%' }
+    },
+    {
+        name: '정화의 영역',
+        icon: '🌀',
+        requires: ['circleField', 'spray'],  // 정화 필드 + 소독스프레이
+        bonus: { area: 0.30, desc: '범위 공격 +30%' }
+    },
+    // 기술 계열 시너지
+    {
+        name: '스마트 환경관리',
+        icon: '🤖',
+        requires: ['detector', 'drone'],  // 오염측정기 + 환경드론
+        bonus: { damage: 0.20, cooldown: 0.15, desc: '데미지 +20%, 쿨다운 -15%' }
+    },
+    {
+        name: '관통의 달인',
+        icon: '⚡',
+        requires: ['pipe', 'pierce'],  // 폐수파이프 + 관통 패시브
+        bonus: { damage: 0.30, desc: '관통 데미지 +30%' }
+    },
+    // 근접 계열 시너지
+    {
+        name: '근접 전문가',
+        icon: '👊',
+        requires: ['gloves', 'blower'],  // 보호장갑 + 송풍기
+        bonus: { damage: 0.20, speed: 0.10, desc: '근접 데미지 +20%, 이동속도 +10%' }
+    },
+    // 방어 계열 시너지
+    {
+        name: '철벽 방어',
+        icon: '🛡️',
+        requires: ['armor', 'maxHp'],  // 방어력 + 체력 패시브
+        bonus: { armor: 2, regen: 1, desc: '방어력 +2, 초당 HP +1' }
+    },
+    // 공격 계열 시너지
+    {
+        name: '치명적 일격',
+        icon: '💀',
+        requires: ['critChance', 'critDamage'],  // 크리티컬 + 치명타력
+        bonus: { critDamage: 0.50, desc: '치명타 데미지 +50%' }
+    },
+    // 설치물 시너지
+    {
+        name: '폭발의 대가',
+        icon: '💥',
+        requires: ['cone', 'truck'],  // 안전콘 + 청소차
+        bonus: { damage: 0.35, desc: '폭발/돌진 데미지 +35%' }
+    },
+    // 유도 계열 시너지
+    {
+        name: '추적의 달인',
+        icon: '🎯',
+        requires: ['homingMissile', 'detector'],  // 중화제탄 + 오염측정기
+        bonus: { damage: 0.25, projectile: 1, desc: '유도 공격 +25%, 투사체 +1' }
+    },
+    // 흡수 계열 시너지
+    {
+        name: '생명력 착취',
+        icon: '❤️',
+        requires: ['lifesteal', 'damage'],  // 흡혈 + 정화력
+        bonus: { lifesteal: 0.01, desc: '추가 흡혈 +1%' }
+    }
+];
+
 // ==========================================
 // BootScene
 // ==========================================
@@ -2349,7 +2422,7 @@ class GameScene extends Phaser.Scene {
             kills: 0,
             speed: CONFIG.PLAYER_SPEED,
             invincibleTime: 0,
-            weapons: { waterGun: 1, dredgeHose: 1 },  // ★ 준설호스 기본 장착
+            weapons: { waterGun: 1 },  // ★ 고압 세척기만 기본 장착
             passives: {}
         };
 
@@ -2587,6 +2660,51 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    // ★★★ 시너지 체크 시스템 ★★★
+    getActiveSynergies() {
+        const active = [];
+        const allSkills = { ...this.playerState.weapons, ...this.playerState.passives };
+
+        for (const synergy of SYNERGIES) {
+            // 모든 필요 스킬이 있는지 확인
+            const hasAll = synergy.requires.every(skill => (allSkills[skill] || 0) > 0);
+            if (hasAll) {
+                active.push(synergy);
+            }
+        }
+        return active;
+    }
+
+    // 시너지 보너스 계산
+    getSynergyBonus() {
+        const activeSynergies = this.getActiveSynergies();
+        const bonus = {
+            damage: 0,
+            area: 0,
+            cooldown: 0,
+            speed: 0,
+            armor: 0,
+            regen: 0,
+            critDamage: 0,
+            projectile: 0,
+            lifesteal: 0
+        };
+
+        for (const synergy of activeSynergies) {
+            if (synergy.bonus.damage) bonus.damage += synergy.bonus.damage;
+            if (synergy.bonus.area) bonus.area += synergy.bonus.area;
+            if (synergy.bonus.cooldown) bonus.cooldown += synergy.bonus.cooldown;
+            if (synergy.bonus.speed) bonus.speed += synergy.bonus.speed;
+            if (synergy.bonus.armor) bonus.armor += synergy.bonus.armor;
+            if (synergy.bonus.regen) bonus.regen += synergy.bonus.regen;
+            if (synergy.bonus.critDamage) bonus.critDamage += synergy.bonus.critDamage;
+            if (synergy.bonus.projectile) bonus.projectile += synergy.bonus.projectile;
+            if (synergy.bonus.lifesteal) bonus.lifesteal += synergy.bonus.lifesteal;
+        }
+
+        return bonus;
+    }
+
     // ★ 스킬 UI (왼쪽 아이콘 목록) - 더 많이 표시
     createSkillUI() {
         this.skillUI = this.add.container(10, 60).setScrollFactor(0).setDepth(100);
@@ -2699,6 +2817,29 @@ class GameScene extends Phaser.Scene {
 
                 idx++;
                 if (idx >= 5) break;  // ★ 최대 5개 패시브
+            }
+        }
+
+        // ★★★ 활성화된 시너지 표시 ★★★
+        const activeSynergies = this.getActiveSynergies();
+        if (activeSynergies.length > 0) {
+            // 시너지 라벨
+            const synergyLabel = this.add.text(27, 395, '시너지', {
+                fontSize: '8px',
+                fontStyle: 'bold',
+                fill: '#ff6b6b'
+            }).setOrigin(0.5);
+            this.skillUI.add(synergyLabel);
+            this.skillIcons.push(synergyLabel);
+
+            // 시너지 아이콘 표시 (최대 2개)
+            for (let i = 0; i < Math.min(activeSynergies.length, 2); i++) {
+                const synergy = activeSynergies[i];
+                const synergyIcon = this.add.text(27, 408 + i * 14, synergy.icon, {
+                    fontSize: '12px'
+                }).setOrigin(0.5);
+                this.skillUI.add(synergyIcon);
+                this.skillIcons.push(synergyIcon);
             }
         }
     }
@@ -2890,7 +3031,10 @@ class GameScene extends Phaser.Scene {
     }
 
     updateWeapons(time) {
-        const dmgBonus = 1 + (this.playerState.passives.damage || 0) * PASSIVES.damage.effect;
+        // ★ 시너지 보너스 적용
+        const synergyBonus = this.getSynergyBonus();
+        const dmgBonus = 1 + (this.playerState.passives.damage || 0) * PASSIVES.damage.effect + synergyBonus.damage;
+        const cdBonus = synergyBonus.cooldown;  // 쿨다운 감소
 
         // 고압 세척기
         const wgLv = this.playerState.weapons.waterGun || 0;
