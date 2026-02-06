@@ -4303,7 +4303,8 @@ class GameScene extends Phaser.Scene {
 
     updateItems() {
         // 아이템이 플레이어 근처에 있으면 자석처럼 끌려옴
-        const magnetRange = 80;
+        const magnetRange = 100;
+        const collectRange = 25;  // 이 거리 안이면 즉시 수집
         const px = this.player.x, py = this.player.y;
 
         this.items.children.each(item => {
@@ -4311,11 +4312,18 @@ class GameScene extends Phaser.Scene {
 
             const dx = px - item.x;
             const dy = py - item.y;
-            const distSq = dx * dx + dy * dy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (distSq < magnetRange * magnetRange) {
-                const invDist = 1 / Math.sqrt(distSq);
-                item.setVelocity(dx * invDist * 200, dy * invDist * 200);
+            // 매우 가까우면 즉시 수집
+            if (dist < collectRange) {
+                this.onCollectItem(this.player, item);
+                return;
+            }
+
+            if (dist < magnetRange) {
+                // 더 빠른 속도로 끌어당김 (200 → 400)
+                const speed = 400;
+                item.setVelocity((dx / dist) * speed, (dy / dist) * speed);
             } else {
                 item.setVelocity(0, 0);
             }
@@ -4430,20 +4438,55 @@ class GameScene extends Phaser.Scene {
     }
 
     activateBomb() {
+        const px = this.player.x, py = this.player.y;
+        const bombRange = 200;  // ★ 너프: 화면 전체 → 플레이어 주변 200px로 제한
+        const bombDamage = 50;
+
         // 화면 플래시
         this.cameras.main.flash(200, 255, 100, 0);
+        this.cameras.main.shake(150, 0.02);
 
-        // 모든 일반 적에게 대미지 (너프: 100 → 30)
+        // 폭발 범위 시각화
+        const explosionCircle = this.add.circle(px, py, bombRange, 0xff5722, 0.4).setDepth(100);
+        const explosionRing = this.add.circle(px, py, 10, 0xffeb3b, 0.8).setDepth(101);
+
+        this.tweens.add({
+            targets: explosionCircle,
+            alpha: 0,
+            duration: 400,
+            onComplete: () => explosionCircle.destroy()
+        });
+
+        this.tweens.add({
+            targets: explosionRing,
+            scale: bombRange / 10,
+            alpha: 0,
+            duration: 300,
+            onComplete: () => explosionRing.destroy()
+        });
+
+        // ★ 범위 내 일반 적에게만 대미지
         this.enemies.children.each(e => {
-            if (e.active) {
-                e.hp -= 30;
+            if (!e.active) return;
+            const dx = e.x - px, dy = e.y - py;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= bombRange) {
+                e.hp -= bombDamage;
+                // 넉백 효과
+                if (dist > 0) {
+                    e.x += (dx / dist) * 30;
+                    e.y += (dy / dist) * 30;
+                }
             }
         });
 
-        // 보스에게도 데미지 (최대HP의 5%)
+        // ★ 범위 내 보스에게 데미지 (최대HP의 3%로 너프)
         this.bosses.children.each(b => {
-            if (b.active) {
-                b.hp -= Math.floor(b.maxHp * 0.05);
+            if (!b.active) return;
+            const dx = b.x - px, dy = b.y - py;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= bombRange) {
+                b.hp -= Math.floor(b.maxHp * 0.03);
             }
         });
     }
