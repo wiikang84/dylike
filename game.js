@@ -262,20 +262,6 @@ class BootScene extends Phaser.Scene {
         g.fillStyle(p.uniform.light, 1);
         g.fillRect(cx - 9, cy - 5, 6, 12);
 
-        // ★ DY 로고 (작업복 가슴) - 왼쪽 가슴
-        g.fillStyle(0xffffff, 1);
-        g.fillRect(cx - 8, cy - 5, 7, 5);
-        g.fillStyle(0x0d47a1, 1);
-        // D
-        g.fillRect(cx - 7, cy - 4, 1, 3);
-        g.fillRect(cx - 6, cy - 4, 1, 1);
-        g.fillRect(cx - 6, cy - 2, 1, 1);
-        g.fillRect(cx - 5, cy - 3, 1, 1);
-        // Y
-        g.fillRect(cx - 3, cy - 4, 1, 1);
-        g.fillRect(cx - 1, cy - 4, 1, 1);
-        g.fillRect(cx - 2, cy - 3, 1, 2);
-
         // ===== 반사띠 (X자) =====
         g.fillStyle(p.reflect.dark, 1);
         g.fillRect(cx - 9, cy - 3, 18, 4);
@@ -286,6 +272,28 @@ class BootScene extends Phaser.Scene {
         // 세로 반사띠
         g.fillStyle(p.reflect.mid, 1);
         g.fillRect(cx - 2, cy - 5, 4, 12);
+
+        // ★ DY 로고 (작업복 가슴) - 반사띠 위에 표시
+        // 흰색 배경 (더 크게)
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(cx + 3, cy - 6, 10, 7);
+        // 검정 테두리
+        g.fillStyle(0x1a1a1a, 1);
+        g.fillRect(cx + 3, cy - 6, 10, 1);
+        g.fillRect(cx + 3, cy, 10, 1);
+        g.fillRect(cx + 3, cy - 6, 1, 7);
+        g.fillRect(cx + 12, cy - 6, 1, 7);
+        // DY 글자 (파란색, 더 크게)
+        g.fillStyle(0x0d47a1, 1);
+        // D
+        g.fillRect(cx + 4, cy - 5, 1, 5);
+        g.fillRect(cx + 5, cy - 5, 2, 1);
+        g.fillRect(cx + 5, cy - 1, 2, 1);
+        g.fillRect(cx + 7, cy - 4, 1, 3);
+        // Y
+        g.fillRect(cx + 9, cy - 5, 1, 2);
+        g.fillRect(cx + 11, cy - 5, 1, 2);
+        g.fillRect(cx + 10, cy - 3, 1, 4);
 
         // ===== 왼팔 =====
         g.fillStyle(p.outline.uniform, 1);
@@ -408,21 +416,26 @@ class BootScene extends Phaser.Scene {
         g.fillStyle(p.helmet.mid, 1);
         g.fillRect(cx - 10, cy - 23, 8, 2);
 
-        // ★ DY 로고 (안전모 정면) - 더 명확하게
-        // 흰색 배경 원
+        // ★ DY 로고 (안전모 정면) - 더 크고 명확하게
+        // 흰색 배경 사각형
         g.fillStyle(0xffffff, 1);
-        g.fillCircle(cx, cy - 28, 5);
-        // DY 글자 (파란색)
+        g.fillRect(cx - 6, cy - 31, 12, 8);
+        // 파란 테두리
         g.fillStyle(0x0d47a1, 1);
+        g.fillRect(cx - 6, cy - 31, 12, 1);
+        g.fillRect(cx - 6, cy - 24, 12, 1);
+        g.fillRect(cx - 6, cy - 31, 1, 8);
+        g.fillRect(cx + 5, cy - 31, 1, 8);
+        // DY 글자 (파란색, 더 굵게)
         // D
-        g.fillRect(cx - 4, cy - 30, 1, 5);
-        g.fillRect(cx - 3, cy - 30, 1, 1);
-        g.fillRect(cx - 3, cy - 26, 1, 1);
-        g.fillRect(cx - 2, cy - 29, 1, 3);
+        g.fillRect(cx - 5, cy - 30, 2, 6);
+        g.fillRect(cx - 3, cy - 30, 2, 2);
+        g.fillRect(cx - 3, cy - 26, 2, 2);
+        g.fillRect(cx - 1, cy - 28, 1, 2);
         // Y
-        g.fillRect(cx + 1, cy - 30, 1, 2);
-        g.fillRect(cx + 3, cy - 30, 1, 2);
-        g.fillRect(cx + 2, cy - 28, 1, 3);
+        g.fillRect(cx + 1, cy - 30, 2, 3);
+        g.fillRect(cx + 3, cy - 30, 2, 3);
+        g.fillRect(cx + 2, cy - 27, 2, 4);
     }
 
     // 후면 그리기
@@ -2450,15 +2463,20 @@ class GameScene extends Phaser.Scene {
     createHUD() {
         this.hud = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
 
-        this.hpBarBg = this.add.rectangle(120, 20, 200, 20, COLORS.HP_BG);
-        this.hpBar = this.add.rectangle(22, 20, 196, 16, COLORS.HP_BAR).setOrigin(0, 0.5);
-        this.hpText = this.add.text(120, 20, '100/100', { fontSize: '12px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-        this.levelText = this.add.text(240, 20, 'Lv.1', { fontSize: '16px', fontStyle: 'bold', fill: '#00a8e8' }).setOrigin(0, 0.5);
-        this.timeText = this.add.text(CONFIG.WIDTH-20, 20, '00:00', { fontSize: '16px', fontStyle: 'bold', fill: '#fff' }).setOrigin(1, 0.5);
-        this.expBarBg = this.add.rectangle(CONFIG.WIDTH/2, 45, CONFIG.WIDTH-40, 8, COLORS.EXP_BG);
-        this.expBar = this.add.rectangle(20, 45, 0, 6, COLORS.EXP_BAR).setOrigin(0, 0.5);
-        this.killText = this.add.text(CONFIG.WIDTH-20, 45, '정화: 0', { fontSize: '12px', fill: '#aaa' }).setOrigin(1, 0.5);
-        this.fpsText = this.add.text(CONFIG.WIDTH-20, CONFIG.HEIGHT-20, 'FPS: 60', { fontSize: '12px', fill: '#0f0' }).setOrigin(1, 0.5);
+        // ★ UI 간격 넓힘 (상단 여백 증가)
+        const topMargin = 15;
+        const hpY = topMargin;
+        const expY = topMargin + 30;  // HP바 아래 간격 증가
+
+        this.hpBarBg = this.add.rectangle(150, hpY, 220, 22, COLORS.HP_BG);
+        this.hpBar = this.add.rectangle(42, hpY, 214, 18, COLORS.HP_BAR).setOrigin(0, 0.5);
+        this.hpText = this.add.text(150, hpY, '100/100', { fontSize: '13px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
+        this.levelText = this.add.text(280, hpY, 'Lv.1', { fontSize: '18px', fontStyle: 'bold', fill: '#00a8e8' }).setOrigin(0, 0.5);
+        this.timeText = this.add.text(CONFIG.WIDTH - 80, hpY, '00:00', { fontSize: '18px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5, 0.5);
+        this.expBarBg = this.add.rectangle(CONFIG.WIDTH/2, expY, CONFIG.WIDTH - 80, 10, COLORS.EXP_BG);
+        this.expBar = this.add.rectangle(40, expY, 0, 8, COLORS.EXP_BAR).setOrigin(0, 0.5);
+        this.killText = this.add.text(CONFIG.WIDTH - 20, expY + 15, '정화: 0', { fontSize: '12px', fill: '#aaa' }).setOrigin(1, 0.5);
+        this.fpsText = this.add.text(CONFIG.WIDTH - 20, CONFIG.HEIGHT - 20, 'FPS: 60', { fontSize: '12px', fill: '#0f0' }).setOrigin(1, 0.5);
 
         this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.fpsText]);
 
@@ -2471,7 +2489,7 @@ class GameScene extends Phaser.Scene {
 
     // ★ 스킬 UI (왼쪽 아이콘 목록)
     createSkillUI() {
-        this.skillUI = this.add.container(10, 70).setScrollFactor(0).setDepth(100);
+        this.skillUI = this.add.container(10, 65).setScrollFactor(0).setDepth(100);  // ★ 위치 조정
         this.skillIcons = [];  // 아이콘 저장용
 
         // 배경 패널
@@ -2712,14 +2730,14 @@ class GameScene extends Phaser.Scene {
 
     updateHUD() {
         const hpPct = this.playerState.hp / this.playerState.maxHp;
-        this.hpBar.width = 196 * hpPct;
+        this.hpBar.width = 214 * hpPct;  // ★ 220-6 = 214
         this.hpText.setText(`${Math.ceil(this.playerState.hp)}/${this.playerState.maxHp}`);
         this.levelText.setText(`Lv.${this.playerState.level}`);
 
         const sec = Math.floor(this.gameTime/1000);
         this.timeText.setText(`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`);
 
-        this.expBar.width = (CONFIG.WIDTH-40) * (this.playerState.exp / this.playerState.expToNext);
+        this.expBar.width = (CONFIG.WIDTH - 80) * (this.playerState.exp / this.playerState.expToNext);  // ★ 간격 맞춤
         this.killText.setText(`정화: ${this.playerState.kills}`);
         this.fpsText.setText(`FPS: ${Math.round(this.game.loop.actualFps)}`);
 
@@ -3041,7 +3059,7 @@ class GameScene extends Phaser.Scene {
         }
 
         // ========== 호스 본체 그리기 (주황+검정 줄무늬) ==========
-        const hoseLength = 80;  // 40 → 80 (2배 길이)
+        const hoseLength = 80 + lv * 15;  // ★ 레벨당 15px 증가 (최대 200px)
         const hoseEndX = px + Math.cos(baseAngle) * hoseLength;
         const hoseEndY = py + Math.sin(baseAngle) * hoseLength;
 
@@ -4439,8 +4457,8 @@ class GameScene extends Phaser.Scene {
 
     activateBomb() {
         const px = this.player.x, py = this.player.y;
-        const bombRange = 200;  // ★ 너프: 화면 전체 → 플레이어 주변 200px로 제한
-        const bombDamage = 50;
+        const bombRange = 150;  // ★ 너프: 200 → 150px로 더 축소
+        const bombDamage = 25;  // ★ 너프: 50 → 25로 데미지 감소
 
         // 화면 플래시
         this.cameras.main.flash(200, 255, 100, 0);
@@ -4480,13 +4498,13 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        // ★ 범위 내 보스에게 데미지 (최대HP의 3%로 너프)
+        // ★ 범위 내 보스에게 데미지 (최대HP의 1%로 더 너프)
         this.bosses.children.each(b => {
             if (!b.active) return;
             const dx = b.x - px, dy = b.y - py;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist <= bombRange) {
-                b.hp -= Math.floor(b.maxHp * 0.03);
+                b.hp -= Math.floor(b.maxHp * 0.01);
             }
         });
     }
