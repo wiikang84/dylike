@@ -9,7 +9,7 @@ const CONFIG = {
     HEIGHT: 540,
     MAX_ENEMIES: 300,    // 몹 수 증가
     MAX_BULLETS: 100,
-    MAX_EXP_ORBS: 200,
+    MAX_EXP_ORBS: 500,   // ★ 200 → 500 (경험치 오브 부족 방지)
     PLAYER_SPEED: 300,
     PLAYER_MAX_HP: 100,
     BULLET_SPEED: 500,
@@ -4209,13 +4209,18 @@ class GameScene extends Phaser.Scene {
                 this.deathEmitter.setParticleTint(ENEMY_TYPES[e.enemyType]?.color || 0xffffff);
                 this.deathEmitter.explode(8);
 
-                // 경험치 생성
-                const expCount = e.enemyExp;
+                // 경험치 생성 (레벨에 따라 가치 증가)
+                const expCount = Math.min(e.enemyExp, 5);  // ★ 최대 5개로 제한
+                const expMultiplier = 1 + Math.floor(this.playerState.level / 5);  // ★ 5레벨마다 경험치 가치 증가
                 for (let i = 0; i < expCount; i++) {
                     const exp = this.expOrbs.get(e.x + Phaser.Math.Between(-10, 10), e.y + Phaser.Math.Between(-10, 10), 'exp');
                     if (exp) {
                         exp.setActive(true).setVisible(true);
-                        exp.expValue = 1;
+                        exp.expValue = expMultiplier;  // ★ 레벨에 따른 경험치 가치
+                        // ★ 10초 후 자동 소멸
+                        this.time.delayedCall(10000, () => {
+                            if (exp.active) exp.setActive(false).setVisible(false);
+                        });
                     }
                 }
 
