@@ -2349,7 +2349,7 @@ class GameScene extends Phaser.Scene {
             kills: 0,
             speed: CONFIG.PLAYER_SPEED,
             invincibleTime: 0,
-            weapons: { waterGun: 1 },
+            weapons: { waterGun: 1, dredgeHose: 1 },  // ★ 준설호스 기본 장착
             passives: {}
         };
 
@@ -2535,6 +2535,24 @@ class GameScene extends Phaser.Scene {
 
         this.hud.add([this.hpBarBg, this.hpBar, this.hpText, this.levelText, this.timeText, this.expBarBg, this.expBar, this.killText, this.fpsText]);
 
+        // ★★★ 정지 버튼 추가 ★★★
+        this.pauseBtn = this.add.text(CONFIG.WIDTH - 130, hpY, '⏸️', {
+            fontSize: '24px',
+            backgroundColor: '#333',
+            padding: { x: 8, y: 4 }
+        }).setScrollFactor(0).setDepth(100).setOrigin(0.5).setInteractive();
+
+        this.pauseBtn.on('pointerdown', () => {
+            this.togglePause();
+        });
+
+        // ESC 키로도 정지
+        this.input.keyboard.on('keydown-ESC', () => {
+            this.togglePause();
+        });
+
+        this.isPaused = false;
+
         // ★ 미니맵 생성
         this.createMinimap();
 
@@ -2542,128 +2560,145 @@ class GameScene extends Phaser.Scene {
         this.createSkillUI();
     }
 
-    // ★ 스킬 UI (왼쪽 아이콘 목록)
-    createSkillUI() {
-        this.skillUI = this.add.container(10, 65).setScrollFactor(0).setDepth(100);  // ★ 위치 조정
-        this.skillIcons = [];  // 아이콘 저장용
+    // ★★★ 정지/재개 토글 ★★★
+    togglePause() {
+        this.isPaused = !this.isPaused;
+        if (this.isPaused) {
+            this.physics.pause();
+            this.pauseBtn.setText('▶️');
+            // 정지 오버레이
+            this.pauseOverlay = this.add.rectangle(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, CONFIG.WIDTH, CONFIG.HEIGHT, 0x000000, 0.7)
+                .setScrollFactor(0).setDepth(200);
+            this.pauseText = this.add.text(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, '일시정지\n\n터치하거나 ESC로 계속', {
+                fontSize: '28px',
+                fontStyle: 'bold',
+                fill: '#fff',
+                align: 'center'
+            }).setScrollFactor(0).setDepth(201).setOrigin(0.5);
+            this.pauseText.setInteractive();
+            this.pauseText.on('pointerdown', () => this.togglePause());
+            this.pauseOverlay.setInteractive();
+            this.pauseOverlay.on('pointerdown', () => this.togglePause());
+        } else {
+            this.physics.resume();
+            this.pauseBtn.setText('⏸️');
+            if (this.pauseOverlay) this.pauseOverlay.destroy();
+            if (this.pauseText) this.pauseText.destroy();
+        }
+    }
 
-        // ★ 배경 패널 (크기 증가: 50→65, 높이 증가)
-        const panelBg = this.add.rectangle(0, 0, 65, 320, 0x000000, 0.5)
+    // ★ 스킬 UI (왼쪽 아이콘 목록) - 더 많이 표시
+    createSkillUI() {
+        this.skillUI = this.add.container(10, 60).setScrollFactor(0).setDepth(100);
+        this.skillIcons = [];
+
+        // ★ 배경 패널 (높이 증가: 420px)
+        const panelBg = this.add.rectangle(0, 0, 55, 420, 0x000000, 0.5)
             .setOrigin(0, 0)
             .setStrokeStyle(1, 0x00a8e8, 0.5);
         this.skillUI.add(panelBg);
 
-        // ★ "스킬" 라벨 (크기 증가)
-        const label = this.add.text(32, 10, '스킬', {
-            fontSize: '12px',
+        // "무기" 라벨
+        const weaponLabel = this.add.text(27, 8, '무기', {
+            fontSize: '10px',
             fontStyle: 'bold',
             fill: '#00a8e8'
         }).setOrigin(0.5);
-        this.skillUI.add(label);
+        this.skillUI.add(weaponLabel);
 
-        // ★ 구분선 (무기/패시브) - 위치 조정
-        const divider = this.add.rectangle(32, 165, 55, 2, 0x00a8e8, 0.5);
+        // 구분선 (무기/패시브)
+        const divider = this.add.rectangle(27, 200, 45, 2, 0x00a8e8, 0.5);
         this.skillUI.add(divider);
+
+        // "패시브" 라벨
+        const passiveLabel = this.add.text(27, 210, '패시브', {
+            fontSize: '10px',
+            fontStyle: 'bold',
+            fill: '#7cb342'
+        }).setOrigin(0.5);
+        this.skillUI.add(passiveLabel);
     }
 
-    // ★ 스킬 UI 업데이트 (크기 증가)
+    // ★ 스킬 UI 업데이트 - 더 많이 표시 (5개씩)
     updateSkillUI() {
         // 기존 아이콘 제거
         this.skillIcons.forEach(icon => icon.destroy());
         this.skillIcons = [];
 
-        const startY = 30;
-        const iconSize = 36;   // ★ 28 → 36 확대
-        const gap = 44;        // ★ 36 → 44 간격 확대
-        const centerX = 32;    // ★ 25 → 32 중앙 정렬
+        const startY = 25;
+        const iconSize = 28;   // 아이콘 크기 축소
+        const gap = 34;        // 간격 축소
+        const centerX = 27;
         let idx = 0;
 
-        // 무기 표시 (상단)
+        // 무기 표시 (상단) - 최대 5개
         for (const [key, level] of Object.entries(this.playerState.weapons)) {
             if (level > 0 && WEAPONS[key]) {
                 const y = startY + idx * gap;
                 const maxLevel = WEAPONS[key].maxLevel || 8;
                 const isMax = level >= maxLevel;
 
-                // 아이콘 배경 (MAX면 금색 테두리)
+                // 아이콘 배경
                 const borderColor = isMax ? 0xffd700 : 0x00a8e8;
                 const bg = this.add.rectangle(centerX, y, iconSize, iconSize, 0x1a1a2e, 0.8)
-                    .setStrokeStyle(isMax ? 3 : 2, borderColor);
+                    .setStrokeStyle(isMax ? 2 : 1, borderColor);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
-                // MAX면 배경 빛남 효과
-                if (isMax) {
-                    const glow = this.add.rectangle(centerX, y, iconSize + 6, iconSize + 6, 0xffd700, 0.2);
-                    this.skillUI.add(glow);
-                    this.skillIcons.push(glow);
-                }
-
-                // 아이콘 (이모지) ★ 폰트 크기 증가
+                // 아이콘 (이모지)
                 const icon = this.add.text(centerX, y - 2, WEAPONS[key].icon, {
-                    fontSize: '20px'
+                    fontSize: '16px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시 (MAX 또는 숫자/최대) ★ 폰트 크기 증가
-                const lvDisplayText = isMax ? 'MAX' : `Lv.${level}`;
-                const lvColor = isMax ? '#ffd700' : '#00a8e8';
-                const lvText = this.add.text(centerX, y + 14, lvDisplayText, {
-                    fontSize: '10px',
+                // 레벨 표시
+                const lvText = this.add.text(centerX, y + 11, `${level}`, {
+                    fontSize: '9px',
                     fontStyle: 'bold',
-                    fill: lvColor
+                    fill: isMax ? '#ffd700' : '#00a8e8'
                 }).setOrigin(0.5);
                 this.skillUI.add(lvText);
                 this.skillIcons.push(lvText);
 
                 idx++;
-                if (idx >= 3) break;  // ★ 최대 3개 무기 (크기 증가로 인해)
+                if (idx >= 5) break;  // ★ 최대 5개 무기
             }
         }
 
-        // 패시브 표시 (하단, 구분선 아래)
+        // 패시브 표시 (하단) - 최대 5개
         idx = 0;
         for (const [key, level] of Object.entries(this.playerState.passives)) {
             if (level > 0 && PASSIVES[key]) {
-                const y = 180 + idx * gap;  // ★ 위치 조정
+                const y = 225 + idx * gap;
                 const maxLevel = PASSIVES[key].maxLevel || 5;
                 const isMax = level >= maxLevel;
 
-                // 아이콘 배경 (MAX면 금색 테두리)
+                // 아이콘 배경
                 const borderColor = isMax ? 0xffd700 : 0x7cb342;
                 const bg = this.add.rectangle(centerX, y, iconSize, iconSize, 0x1a1a2e, 0.8)
-                    .setStrokeStyle(isMax ? 3 : 2, borderColor);
+                    .setStrokeStyle(isMax ? 2 : 1, borderColor);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
-                // MAX면 배경 빛남 효과
-                if (isMax) {
-                    const glow = this.add.rectangle(centerX, y, iconSize + 6, iconSize + 6, 0xffd700, 0.2);
-                    this.skillUI.add(glow);
-                    this.skillIcons.push(glow);
-                }
-
-                // 아이콘 (이모지) ★ 폰트 크기 증가
+                // 아이콘 (이모지)
                 const icon = this.add.text(centerX, y - 2, PASSIVES[key].icon, {
-                    fontSize: '20px'
+                    fontSize: '16px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시 (MAX 또는 숫자/최대) ★ 폰트 크기 증가
-                const lvDisplayText = isMax ? 'MAX' : `Lv.${level}`;
-                const lvColor = isMax ? '#ffd700' : '#7cb342';
-                const lvText = this.add.text(centerX, y + 14, lvDisplayText, {
-                    fontSize: '10px',
+                // 레벨 표시
+                const lvText = this.add.text(centerX, y + 11, `${level}`, {
+                    fontSize: '9px',
                     fontStyle: 'bold',
-                    fill: lvColor
+                    fill: isMax ? '#ffd700' : '#7cb342'
                 }).setOrigin(0.5);
                 this.skillUI.add(lvText);
                 this.skillIcons.push(lvText);
 
                 idx++;
-                if (idx >= 3) break;  // ★ 최대 3개 패시브 (크기 증가로 인해)
+                if (idx >= 5) break;  // ★ 최대 5개 패시브
             }
         }
     }
@@ -3985,7 +4020,7 @@ class GameScene extends Phaser.Scene {
         // ★ 시간에 따라 스폰 거리 감소 (압박)
         const minutes = this.gameTime / 60000;
         const playerLevel = this.playerState.level;
-        const baseDist = Math.max(250, 500 - minutes * 20);  // 더 빨리 좁아짐
+        const baseDist = Math.max(250, 500 - minutes * 20);
         const dist = baseDist + Math.random() * 100;
 
         const x = this.player.x + Math.cos(angle) * dist;
@@ -3996,33 +4031,55 @@ class GameScene extends Phaser.Scene {
             enemy.setTexture(`enemy_${typeKey}`);
             enemy.setActive(true).setVisible(true);
 
-            // ★★★ 대폭 강화된 스케일링 시스템 ★★★
+            // ★★★ 플레이어 전투력 기반 적응형 난이도 ★★★
+            // 무기 총 레벨 계산
+            let totalWeaponLevel = 0;
+            for (const lv of Object.values(this.playerState.weapons)) {
+                totalWeaponLevel += lv || 0;
+            }
+            // 패시브 총 레벨 계산
+            let totalPassiveLevel = 0;
+            for (const lv of Object.values(this.playerState.passives)) {
+                totalPassiveLevel += lv || 0;
+            }
+            // 플레이어 전투력 지수 (1.0 기준)
+            const playerPower = 1 + (totalWeaponLevel * 0.05) + (totalPassiveLevel * 0.03);
+
+            // ★★★ 적응형 스케일링 시스템 ★★★
             const timeScale = {
-                hp: 1 + minutes * 0.4,         // ★ 분당 40% HP 증가 (기존 25%)
-                speed: Math.min(1 + minutes * 0.12, 2.5),  // ★ 최대 2.5배
-                damage: 1 + minutes * 0.25,    // ★ 분당 25% 데미지 증가
-                size: 1 + minutes * 0.08       // ★ 신규: 분당 8% 크기 증가
+                hp: 1 + minutes * 0.3,         // 분당 30% HP 증가
+                speed: Math.min(1 + minutes * 0.08, 2.0),  // 최대 2배
+                damage: 1 + minutes * 0.15,    // 분당 15% 데미지 증가
+                size: 1 + minutes * 0.06       // 분당 6% 크기 증가
+            };
+
+            // ★ 플레이어 전투력에 비례한 스케일링 (핵심!)
+            const powerScale = {
+                hp: playerPower,               // 전투력에 비례해 HP 증가
+                damage: 1 + (playerPower - 1) * 0.5,  // 전투력의 50%만 데미지에 반영
+                size: 1 + (playerPower - 1) * 0.3     // 전투력의 30%만 크기에 반영
             };
 
             const levelScale = {
-                hp: 1 + playerLevel * 0.08,    // ★ 레벨당 8% (기존 4%)
-                damage: 1 + playerLevel * 0.05, // ★ 레벨당 5% (기존 2%)
-                size: 1 + playerLevel * 0.02   // ★ 신규: 레벨당 2% 크기 증가
+                hp: 1 + playerLevel * 0.05,    // 레벨당 5%
+                damage: 1 + playerLevel * 0.03, // 레벨당 3%
+                size: 1 + playerLevel * 0.015  // 레벨당 1.5% 크기 증가
             };
 
-            // 엘리트 배율 (더 강력하게)
+            // 엘리트 배율
             const eliteMultiplier = isElite ?
-                { hp: 5, speed: 1.4, damage: 2.5, exp: 10, size: 1.5 } :
+                { hp: 4, speed: 1.3, damage: 2, exp: 8, size: 1.4 } :
                 { hp: 1, speed: 1, damage: 1, exp: 1, size: 1 };
 
-            // ★ 몬스터 크기 스케일 계산 (시간+레벨에 따라 커짐)
-            const sizeScale = Math.min(timeScale.size * levelScale.size * eliteMultiplier.size, 3.0);  // 최대 3배
+            // ★ 몬스터 크기 스케일 계산 (시간+레벨+전투력에 따라 커짐)
+            const sizeScale = Math.min(timeScale.size * levelScale.size * powerScale.size * eliteMultiplier.size, 3.0);
 
-            enemy.hp = Math.floor(type.hp * timeScale.hp * levelScale.hp * eliteMultiplier.hp);
+            // ★ 플레이어 전투력에 비례한 몬스터 능력치
+            enemy.hp = Math.floor(type.hp * timeScale.hp * levelScale.hp * powerScale.hp * eliteMultiplier.hp);
             enemy.maxHp = enemy.hp;
             enemy.enemySpeed = Math.floor(type.speed * timeScale.speed * eliteMultiplier.speed);
-            enemy.enemyDamage = Math.floor(type.damage * timeScale.damage * levelScale.damage * eliteMultiplier.damage);
-            enemy.enemyExp = Math.ceil(type.exp * eliteMultiplier.exp * (1 + playerLevel * 0.02));  // 경험치도 증가
+            enemy.enemyDamage = Math.floor(type.damage * timeScale.damage * levelScale.damage * powerScale.damage * eliteMultiplier.damage);
+            enemy.enemyExp = Math.ceil(type.exp * eliteMultiplier.exp * (1 + playerLevel * 0.02) * Math.sqrt(playerPower));  // 전투력 비례 경험치
             enemy.enemyRadius = type.radius * sizeScale;
             enemy.enemyType = typeKey;
             enemy.isElite = isElite;
