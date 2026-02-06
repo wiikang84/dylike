@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>DY라이크 - 디와이산업개발 환경정화 시뮬레이터</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0f0f1a;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            background: #1a1a2e;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 168, 232, 0.2);
+        }
+
+        #game-container canvas {
+            display: block;
+        }
+
+        /* 모바일 가로모드 안내 */
+        #rotate-message {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f0f1a;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .rotate-icon {
+            font-size: 60px;
+            animation: rotate-phone 1.5s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        .rotate-text {
+            font-size: 18px;
+            color: #00a8e8;
+            font-weight: bold;
+        }
+
+        @keyframes rotate-phone {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        @media (orientation: portrait) and (max-width: 768px) {
+            #rotate-message { display: flex; }
+            #game-container { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <!-- 가로모드 안내 -->
+    <div id="rotate-message">
+        <div class="rotate-icon">📱</div>
+        <p class="rotate-text">화면을 가로로 돌려주세요</p>
+    </div>
+
+    <!-- Phaser 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
