@@ -39,18 +39,19 @@ const COLORS = {
 };
 
 // ========== 적 타입 정의 (고퀄리티 텍스처 크기에 맞게 조정) ==========
+// ★ 난이도 15% 하향 조정: 속도/데미지 감소, 경험치 소폭 증가
 const ENEMY_TYPES = {
     // 기본 적
-    sludge: { name: '슬러지', color: 0x4a3728, radius: 18, hp: 15, speed: 50, damage: 10, exp: 1 },
-    toxic: { name: '폐수', color: 0x7cb342, radius: 16, hp: 8, speed: 100, damage: 8, exp: 1 },
-    waste: { name: '폐기물', color: 0xff8f00, radius: 24, hp: 50, speed: 35, damage: 15, exp: 5 },
-    gas: { name: '유해가스', color: 0x9c27b0, radius: 20, hp: 20, speed: 60, damage: 5, exp: 2 },
+    sludge: { name: '슬러지', color: 0x4a3728, radius: 18, hp: 15, speed: 42, damage: 8, exp: 1 },
+    toxic: { name: '폐수', color: 0x7cb342, radius: 16, hp: 8, speed: 85, damage: 6, exp: 1 },
+    waste: { name: '폐기물', color: 0xff8f00, radius: 24, hp: 45, speed: 30, damage: 12, exp: 6 },
+    gas: { name: '유해가스', color: 0x9c27b0, radius: 20, hp: 18, speed: 50, damage: 4, exp: 2 },
 
-    // ★ 신규 몬스터
-    pollutedWater: { name: '오염수', color: 0x1565c0, radius: 12, hp: 8, speed: 90, damage: 5, exp: 1 },      // 작고 빠름
-    grease: { name: '기름때', color: 0x37474f, radius: 22, hp: 40, speed: 35, damage: 18, exp: 3 },           // 느리고 강함
-    oilDrum: { name: '폐유통', color: 0xd84315, radius: 20, hp: 30, speed: 45, damage: 20, exp: 4 },          // 폭발
-    sludgeGiant: { name: '슬러지 거인', color: 0x3e2723, radius: 35, hp: 150, speed: 30, damage: 30, exp: 15 } // 미니보스급
+    // ★ 신규 몬스터 (난이도 하향)
+    pollutedWater: { name: '오염수', color: 0x1565c0, radius: 12, hp: 8, speed: 75, damage: 4, exp: 1 },      // 작고 빠름
+    grease: { name: '기름때', color: 0x37474f, radius: 22, hp: 35, speed: 30, damage: 15, exp: 4 },           // 느리고 강함
+    oilDrum: { name: '폐유통', color: 0xd84315, radius: 20, hp: 28, speed: 38, damage: 16, exp: 5 },          // 폭발
+    sludgeGiant: { name: '슬러지 거인', color: 0x3e2723, radius: 35, hp: 130, speed: 25, damage: 25, exp: 18 } // 미니보스급
 };
 
 // ========== 웨이브 설정 (뱀서라이크 스타일) ==========
@@ -67,35 +68,36 @@ const WAVE_CONFIG = [
 ];
 
 // ========== 보스 타입 정의 (고퀄리티 텍스처 크기에 맞게 조정) ==========
+// ★ 보스 난이도 15% 하향: 속도/데미지 감소
 const BOSS_TYPES = {
     sludge_king: {
         name: '슬러지 킹',
         color: 0x3d2817,
         radius: 55,           // 120x120 텍스처
-        hp: 500,
-        speed: 30,
-        damage: 25,
-        exp: 50,
+        hp: 450,
+        speed: 25,
+        damage: 20,
+        exp: 60,
         spawnTime: 180000     // 3분
     },
     drum_giant: {
         name: '드럼통 거인',
         color: 0xd84315,
         radius: 65,           // 140x140 텍스처
-        hp: 1000,
-        speed: 25,
-        damage: 35,
-        exp: 100,
+        hp: 850,
+        speed: 22,
+        damage: 28,
+        exp: 120,
         spawnTime: 360000     // 6분
     },
     toxic_reaper: {
         name: '오염의 사신',
         color: 0x4a148c,
         radius: 75,           // 160x160 텍스처
-        hp: 2000,
-        speed: 40,
-        damage: 50,
-        exp: 200,
+        hp: 1700,
+        speed: 35,
+        damage: 40,
+        exp: 250,
         spawnTime: 540000     // 9분
     }
 };
@@ -4056,88 +4058,92 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // ★ 안전콘 - 설치 후 폭발
+    // ★ 안전콘 - 캐릭터 옆에서 지속 공격 후 폭발
     fireCone(lv, dmgBonus, areaBonus) {
-        const px = this.player.x, py = this.player.y;
-        const target = this.findClosestEnemy();
-        const angle = target ? Math.atan2(target.y - py, target.x - px) : (this.playerFacingAngle || 0);
-
-        const coneX = px + Math.cos(angle) * 80;
-        const coneY = py + Math.sin(angle) * 80;
-
-        const absorbHits = WEAPONS.cone.absorbHits + Math.floor(lv / 2);
         const explosionRadius = (WEAPONS.cone.explosionRadius + lv * 15) * areaBonus;
-        const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.25) * dmgBonus;  // 레벨당 25% 증가
+        const duration = 5000 + lv * 500;  // 기본 5초, 레벨당 0.5초 증가
+
+        // 플레이어 주변 랜덤 위치 (60~100 거리)
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 60 + Math.random() * 40;
+        const offsetX = Math.cos(angle) * dist;
+        const offsetY = Math.sin(angle) * dist;
 
         // 안전콘 그래픽 (주황+검정 줄무늬)
-        const cone = this.add.graphics().setDepth(8);
+        const cone = this.add.graphics().setDepth(12);
         cone.fillStyle(0xff6f00, 1);
-        cone.fillTriangle(coneX, coneY - 25, coneX - 15, coneY + 10, coneX + 15, coneY + 10);
+        cone.fillTriangle(0, -25, -15, 10, 15, 10);
         cone.fillStyle(0x1a1a1a, 1);
-        cone.fillRect(coneX - 12, coneY - 5, 24, 4);
-        cone.fillRect(coneX - 12, coneY + 3, 24, 4);
+        cone.fillRect(-12, -5, 24, 4);
+        cone.fillRect(-12, 3, 24, 4);
+        cone.x = this.player.x + offsetX;
+        cone.y = this.player.y + offsetY;
 
-        let hits = 0;
-        const hitCheck = this.time.addEvent({
-            delay: 100,
+        // 공격 범위 표시 (반투명 원)
+        const rangeCircle = this.add.circle(cone.x, cone.y, 50, 0xff6f00, 0.15).setDepth(7);
+
+        // 지속 공격 (0.3초마다)
+        let elapsed = 0;
+        const attackInterval = this.time.addEvent({
+            delay: 300,
             repeat: -1,
             callback: () => {
+                elapsed += 300;
+                // 플레이어 따라다니기
+                cone.x = this.player.x + offsetX;
+                cone.y = this.player.y + offsetY;
+                rangeCircle.x = cone.x;
+                rangeCircle.y = cone.y;
+
+                // 범위 내 적 공격
                 this.enemies.children.each(e => {
                     if (!e.active) return;
-                    const dx = e.x - coneX, dy = e.y - coneY;
-                    if (Math.sqrt(dx*dx + dy*dy) <= 30) {
-                        hits++;
-                        this.damageEnemy(e, 5); // 접촉 데미지
+                    const dx = e.x - cone.x, dy = e.y - cone.y;
+                    if (Math.sqrt(dx*dx + dy*dy) <= 50) {
+                        this.damageEnemy(e, dmg * 0.15);  // 틱당 15% 데미지
+                        // 작은 이펙트
+                        const spark = this.add.circle(e.x, e.y, 8, 0xff6f00, 0.6).setDepth(11);
+                        this.tweens.add({ targets: spark, alpha: 0, scale: 0, duration: 150, onComplete: () => spark.destroy() });
                     }
                 });
 
-                if (hits >= absorbHits) {
-                    // 폭발!
-                    hitCheck.remove();
-                    cone.destroy();
-
+                // 지속시간 끝나면 폭발
+                if (elapsed >= duration) {
+                    attackInterval.remove();
                     // 폭발 이펙트
-                    const explosion = this.add.circle(coneX, coneY, explosionRadius, 0xff5722, 0.7).setDepth(15);
+                    const explosion = this.add.circle(cone.x, cone.y, explosionRadius, 0xff5722, 0.8).setDepth(15);
                     this.cameras.main.shake(100, 0.01);
 
+                    // 폭발 데미지 (전체 데미지)
                     this.enemies.children.each(e => {
                         if (!e.active) return;
-                        const dx = e.x - coneX, dy = e.y - coneY;
+                        const dx = e.x - cone.x, dy = e.y - cone.y;
                         if (Math.sqrt(dx*dx + dy*dy) <= explosionRadius) {
                             this.damageEnemy(e, dmg);
                         }
                     });
 
                     this.tweens.add({
-                        targets: explosion,
+                        targets: [explosion, rangeCircle],
                         scale: 1.5,
                         alpha: 0,
                         duration: 300,
-                        onComplete: () => explosion.destroy()
+                        onComplete: () => { explosion.destroy(); rangeCircle.destroy(); }
                     });
+                    cone.destroy();
                 }
-            }
-        });
-
-        // 5초 후 자동 폭발
-        this.time.delayedCall(5000, () => {
-            if (hitCheck.getProgress() < 1) {
-                hitCheck.remove();
-                cone.destroy();
             }
         });
     }
 
-    // ★ 청소차 - 돌진 공격
+    // ★ 청소차 - 캐릭터 옆에서 회전하며 지속 공격
     fireTruck(lv, dmgBonus) {
-        const px = this.player.x, py = this.player.y;
-        const target = this.findClosestEnemy();
-        const angle = target ? Math.atan2(target.y - py, target.x - px) : (this.playerFacingAngle || 0);
+        const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.25) * dmgBonus;  // 레벨당 25% 증가
+        const duration = 6000 + lv * 600;  // 기본 6초, 레벨당 0.6초 증가
+        const orbitRadius = 80 + lv * 5;  // 레벨당 회전 반경 증가
 
-        const dashDistance = WEAPONS.truck.dashDistance + lv * 30;
-        const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.2) * dmgBonus;
-
-        // 트럭 그래픽
+        // 청소차 그래픽
         const truck = this.add.graphics().setDepth(12);
         truck.fillStyle(0xff6f00, 1);
         truck.fillRect(-20, -12, 40, 24);
@@ -4146,96 +4152,150 @@ class GameScene extends Phaser.Scene {
         truck.fillStyle(0x424242, 1);
         truck.fillCircle(-15, 12, 6);
         truck.fillCircle(15, 12, 6);
-        truck.x = px;
-        truck.y = py;
 
-        const endX = px + Math.cos(angle) * dashDistance;
-        const endY = py + Math.sin(angle) * dashDistance;
+        let elapsed = 0;
+        let orbitAngle = Math.random() * Math.PI * 2;
+        const hitCooldowns = new Map();  // 같은 적 연속 히트 방지
 
-        // 돌진 중 데미지
-        const hitEnemies = new Set();
+        // 회전하며 공격
+        const attackInterval = this.time.addEvent({
+            delay: 50,  // 50ms마다 업데이트
+            repeat: -1,
+            callback: () => {
+                elapsed += 50;
+                orbitAngle += 0.08;  // 회전 속도
 
-        this.tweens.add({
-            targets: truck,
-            x: endX,
-            y: endY,
-            duration: 400,
-            ease: 'Quad.easeOut',
-            onUpdate: () => {
+                // 플레이어 주변 회전
+                truck.x = this.player.x + Math.cos(orbitAngle) * orbitRadius;
+                truck.y = this.player.y + Math.sin(orbitAngle) * orbitRadius;
+                truck.rotation = orbitAngle + Math.PI / 2;
+
+                // 범위 내 적 공격 (100ms 쿨다운)
+                const now = this.time.now;
                 this.enemies.children.each(e => {
-                    if (!e.active || hitEnemies.has(e)) return;
+                    if (!e.active) return;
+                    const lastHit = hitCooldowns.get(e) || 0;
+                    if (now - lastHit < 200) return;  // 0.2초 쿨다운
+
                     const dx = e.x - truck.x, dy = e.y - truck.y;
-                    if (Math.sqrt(dx*dx + dy*dy) <= 40) {
-                        this.damageEnemy(e, dmg);
-                        hitEnemies.add(e);
-                        // 넉백
-                        e.x += Math.cos(angle) * 50;
-                        e.y += Math.sin(angle) * 50;
+                    if (Math.sqrt(dx*dx + dy*dy) <= 45) {
+                        this.damageEnemy(e, dmg * 0.2);  // 틱당 20% 데미지
+                        hitCooldowns.set(e, now);
+                        // 넉백 효과
+                        const knockAngle = Math.atan2(e.y - truck.y, e.x - truck.x);
+                        e.x += Math.cos(knockAngle) * 20;
+                        e.y += Math.sin(knockAngle) * 20;
+                        // 이펙트
+                        const spark = this.add.circle(e.x, e.y, 10, 0xff6f00, 0.5).setDepth(11);
+                        this.tweens.add({ targets: spark, alpha: 0, scale: 0, duration: 100, onComplete: () => spark.destroy() });
                     }
                 });
-            },
-            onComplete: () => {
-                this.tweens.add({
-                    targets: truck,
-                    alpha: 0,
-                    duration: 200,
-                    onComplete: () => truck.destroy()
-                });
+
+                // 지속시간 끝
+                if (elapsed >= duration) {
+                    attackInterval.remove();
+                    this.tweens.add({
+                        targets: truck,
+                        alpha: 0,
+                        scale: 1.3,
+                        duration: 300,
+                        onComplete: () => truck.destroy()
+                    });
+                }
             }
         });
     }
 
-    // ★ 환경드론 - 자동 순찰 공격
+    // ★ 환경드론 - 캐릭터 위에서 호버링하며 지속 공격
     fireDrone(lv, dmgBonus) {
-        const px = this.player.x, py = this.player.y;
-        const orbitRadius = WEAPONS.drone.orbitRadius + lv * 10;
-        const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.15) * dmgBonus;
+        const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.2) * dmgBonus;  // 레벨당 20% 증가
+        const duration = 5000 + lv * 500;  // 기본 5초, 레벨당 0.5초 증가
+        const attackRange = 120 + lv * 10;  // 레벨당 공격 범위 증가
+        const attackCooldown = Math.max(200, 400 - lv * 20);  // 레벨 올라갈수록 빠르게 공격
 
-        // 가장 가까운 적 찾기
-        const target = this.findClosestEnemy();
-        if (!target) return;
-
-        // 드론 발사체
+        // 드론 그래픽 (본체 + 프로펠러)
         const drone = this.add.graphics().setDepth(12);
         drone.fillStyle(0x90a4ae, 1);
-        drone.fillRect(-8, -4, 16, 8);
+        drone.fillRect(-12, -6, 24, 12);
         drone.fillStyle(0x1565c0, 1);
-        drone.fillCircle(0, 0, 4);
-        drone.x = px;
-        drone.y = py - 30;
+        drone.fillCircle(0, 0, 6);
+        drone.fillStyle(0x37474f, 1);
+        drone.fillRect(-18, -2, 8, 4);
+        drone.fillRect(10, -2, 8, 4);
 
-        // 타겟으로 이동 후 복귀
-        this.tweens.add({
-            targets: drone,
-            x: target.x,
-            y: target.y,
-            duration: 300,
-            ease: 'Quad.easeIn',
-            onComplete: () => {
-                // 타겟 데미지
-                if (target.active) {
-                    this.damageEnemy(target, dmg);
+        // 드론 초기 위치 (플레이어 위)
+        const hoverOffset = { x: Phaser.Math.Between(-30, 30), y: -50 };
+        drone.x = this.player.x + hoverOffset.x;
+        drone.y = this.player.y + hoverOffset.y;
 
-                    // 충격파
-                    const wave = this.add.circle(target.x, target.y, 20, 0x1565c0, 0.5).setDepth(11);
-                    this.tweens.add({
-                        targets: wave,
-                        scale: 2,
-                        alpha: 0,
-                        duration: 200,
-                        onComplete: () => wave.destroy()
+        // 공격 범위 표시
+        const rangeCircle = this.add.circle(drone.x, drone.y, attackRange, 0x1565c0, 0.1).setDepth(6);
+
+        let elapsed = 0;
+        let lastAttack = 0;
+        let propellerAngle = 0;
+
+        const attackInterval = this.time.addEvent({
+            delay: 50,
+            repeat: -1,
+            callback: () => {
+                elapsed += 50;
+                propellerAngle += 0.3;
+
+                // 플레이어 따라다니며 약간 흔들림
+                const wobbleX = Math.sin(elapsed * 0.003) * 5;
+                const wobbleY = Math.cos(elapsed * 0.004) * 3;
+                drone.x = this.player.x + hoverOffset.x + wobbleX;
+                drone.y = this.player.y + hoverOffset.y + wobbleY;
+                rangeCircle.x = drone.x;
+                rangeCircle.y = drone.y;
+
+                // 공격 쿨다운 체크
+                if (elapsed - lastAttack >= attackCooldown) {
+                    // 가장 가까운 적 찾기
+                    let closestEnemy = null;
+                    let closestDist = attackRange;
+                    this.enemies.children.each(e => {
+                        if (!e.active) return;
+                        const dx = e.x - drone.x, dy = e.y - drone.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            closestEnemy = e;
+                        }
                     });
+
+                    if (closestEnemy) {
+                        lastAttack = elapsed;
+                        // 레이저 공격 이펙트
+                        const laser = this.add.graphics().setDepth(11);
+                        laser.lineStyle(3, 0x00e5ff, 0.8);
+                        laser.lineBetween(drone.x, drone.y, closestEnemy.x, closestEnemy.y);
+
+                        this.damageEnemy(closestEnemy, dmg);
+
+                        // 충격파 이펙트
+                        const wave = this.add.circle(closestEnemy.x, closestEnemy.y, 15, 0x00e5ff, 0.6).setDepth(10);
+                        this.tweens.add({
+                            targets: [laser, wave],
+                            alpha: 0,
+                            duration: 150,
+                            onComplete: () => { laser.destroy(); wave.destroy(); }
+                        });
+                    }
                 }
 
-                // 복귀
-                this.tweens.add({
-                    targets: drone,
-                    x: px,
-                    y: py - 30,
-                    alpha: 0,
-                    duration: 200,
-                    onComplete: () => drone.destroy()
-                });
+                // 지속시간 끝
+                if (elapsed >= duration) {
+                    attackInterval.remove();
+                    this.tweens.add({
+                        targets: [drone, rangeCircle],
+                        alpha: 0,
+                        y: drone.y - 50,
+                        duration: 400,
+                        onComplete: () => { drone.destroy(); rangeCircle.destroy(); }
+                    });
+                }
             }
         });
     }
