@@ -109,21 +109,46 @@ const ITEM_TYPES = {
     chest: { name: '보물상자', color: 0xffc107, effect: 'chest', dropRate: 0 }  // 보스 전용
 };
 
-// ========== 무기 정의 ==========
+// ========== 무기 정의 (12종) ==========
 const WEAPONS = {
+    // 기존 4종
     waterGun: { name: '고압 세척기', icon: '💧', desc: '물 발사', baseDamage: 10, baseCooldown: 400, projectileSpeed: 500, maxLevel: 8 },
     circleField: { name: '정화 필드', icon: '🔵', desc: '주변 정화', baseDamage: 5, baseRadius: 80, orbCount: 3, maxLevel: 8 },
     homingMissile: { name: '중화제 탄', icon: '🎯', desc: '유도탄', baseDamage: 25, baseCooldown: 2000, projectileSpeed: 250, maxLevel: 8 },
-    dredgeHose: { name: '준설호스', icon: '🌊', desc: '전방 범위 공격', baseDamage: 8, baseCooldown: 100, range: 150, angle: 60, maxLevel: 8 }
+    dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 8, baseCooldown: 100, range: 250, angle: 60, maxLevel: 8 },  // range 150→250
+
+    // ★ 신규 8종
+    blower: { name: '산업용 송풍기', icon: '💨', desc: '적 밀치기+데미지', baseDamage: 8, baseCooldown: 800, range: 180, angle: 60, knockback: 300, maxLevel: 8 },
+    detector: { name: '오염측정기', icon: '📡', desc: '연쇄 번개 공격', baseDamage: 15, baseCooldown: 1200, chainCount: 3, chainRange: 150, maxLevel: 8 },
+    gloves: { name: '보호장갑', icon: '🧤', desc: '빠른 펀치 공격', baseDamage: 12, baseCooldown: 200, range: 60, angle: 120, maxLevel: 8 },
+    spray: { name: '소독스프레이', icon: '🧴', desc: '정화 영역 생성', baseDamage: 3, baseCooldown: 3000, radius: 80, duration: 5000, maxLevel: 8 },
+    cone: { name: '안전콘', icon: '🔶', desc: '설치 후 폭발', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 8 },
+    truck: { name: '청소차', icon: '🚛', desc: '돌진 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 8 },
+    drone: { name: '환경드론', icon: '🚁', desc: '자동 순찰 공격', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 8 },
+    pipe: { name: '폐수파이프', icon: '🔧', desc: '관통 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 8 }
 };
 
-// ========== 패시브 스킬 ==========
+// ========== 패시브 스킬 (16종) ==========
 const PASSIVES = {
+    // 기존 5종
     damage: { name: '정화력', icon: '⚔️', desc: '데미지 +10%', maxLevel: 5, effect: 0.1 },
     speed: { name: '이동속도', icon: '👟', desc: '속도 +12%', maxLevel: 5, effect: 0.12 },
     maxHp: { name: '체력', icon: '🛡️', desc: 'HP +20', maxLevel: 5, effect: 20 },
     magnet: { name: '자석', icon: '🧲', desc: '수집범위 +40%', maxLevel: 5, effect: 0.4 },
-    regen: { name: '재생', icon: '💚', desc: '초당 HP 2회복', maxLevel: 3, effect: 2 }
+    regen: { name: '재생', icon: '💚', desc: '초당 HP 2회복', maxLevel: 3, effect: 2 },
+
+    // ★ 신규 11종
+    cooldown: { name: '효율성', icon: '⚡', desc: '쿨다운 -8%', maxLevel: 5, effect: 0.08 },
+    projectile: { name: '투사체', icon: '✨', desc: '투사체 +1', maxLevel: 3, effect: 1 },
+    area: { name: '범위', icon: '🎆', desc: '공격범위 +12%', maxLevel: 5, effect: 0.12 },
+    growth: { name: '숙련도', icon: '📈', desc: '경험치 +10%', maxLevel: 5, effect: 0.1 },
+    armor: { name: '방어력', icon: '🔒', desc: '받는 데미지 -1', maxLevel: 5, effect: 1 },
+    critChance: { name: '크리티컬', icon: '💥', desc: '치명타 확률 +5%', maxLevel: 5, effect: 0.05 },
+    critDamage: { name: '치명타력', icon: '🔥', desc: '치명타 데미지 +20%', maxLevel: 5, effect: 0.2 },
+    duration: { name: '지속시간', icon: '⏱️', desc: '효과 지속 +12%', maxLevel: 5, effect: 0.12 },
+    luck: { name: '행운', icon: '🍀', desc: '아이템 드롭률 +8%', maxLevel: 5, effect: 0.08 },
+    pierce: { name: '관통', icon: '🗡️', desc: '투사체 관통 +1', maxLevel: 3, effect: 1 },
+    lifesteal: { name: '흡혈', icon: '🩸', desc: '데미지 2% HP회복', maxLevel: 3, effect: 0.02 }
 };
 
 // ==========================================
@@ -236,6 +261,20 @@ class BootScene extends Phaser.Scene {
         // 하이라이트 (왼쪽 밝게)
         g.fillStyle(p.uniform.light, 1);
         g.fillRect(cx - 9, cy - 5, 6, 12);
+
+        // ★ DY 로고 (작업복 가슴) - 왼쪽 가슴
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(cx - 8, cy - 5, 7, 5);
+        g.fillStyle(0x0d47a1, 1);
+        // D
+        g.fillRect(cx - 7, cy - 4, 1, 3);
+        g.fillRect(cx - 6, cy - 4, 1, 1);
+        g.fillRect(cx - 6, cy - 2, 1, 1);
+        g.fillRect(cx - 5, cy - 3, 1, 1);
+        // Y
+        g.fillRect(cx - 3, cy - 4, 1, 1);
+        g.fillRect(cx - 1, cy - 4, 1, 1);
+        g.fillRect(cx - 2, cy - 3, 1, 2);
 
         // ===== 반사띠 (X자) =====
         g.fillStyle(p.reflect.dark, 1);
@@ -369,11 +408,21 @@ class BootScene extends Phaser.Scene {
         g.fillStyle(p.helmet.mid, 1);
         g.fillRect(cx - 10, cy - 23, 8, 2);
 
-        // DY 로고
-        g.fillStyle(0x1565c0, 1);
-        g.fillRect(cx - 4, cy - 29, 8, 4);
+        // ★ DY 로고 (안전모 정면) - 더 명확하게
+        // 흰색 배경 원
         g.fillStyle(0xffffff, 1);
-        g.fillRect(cx - 2, cy - 28, 4, 2);
+        g.fillCircle(cx, cy - 28, 5);
+        // DY 글자 (파란색)
+        g.fillStyle(0x0d47a1, 1);
+        // D
+        g.fillRect(cx - 4, cy - 30, 1, 5);
+        g.fillRect(cx - 3, cy - 30, 1, 1);
+        g.fillRect(cx - 3, cy - 26, 1, 1);
+        g.fillRect(cx - 2, cy - 29, 1, 3);
+        // Y
+        g.fillRect(cx + 1, cy - 30, 1, 2);
+        g.fillRect(cx + 3, cy - 30, 1, 2);
+        g.fillRect(cx + 2, cy - 28, 1, 3);
     }
 
     // 후면 그리기
@@ -2763,6 +2812,152 @@ class GameScene extends Phaser.Scene {
                 this.weaponTimers.dredgeHose = time;
             }
         }
+
+        // ★ 신규 무기들
+        const cdBonus = 1 - (this.playerState.passives.cooldown || 0) * PASSIVES.cooldown.effect;
+        const areaBonus = 1 + (this.playerState.passives.area || 0) * PASSIVES.area.effect;
+
+        // 산업용 송풍기
+        const blowerLv = this.playerState.weapons.blower || 0;
+        if (blowerLv > 0) {
+            const cd = WEAPONS.blower.baseCooldown * cdBonus * (1 - blowerLv * 0.05);
+            if (time > (this.weaponTimers.blower || 0) + cd) {
+                this.fireBlower(blowerLv, dmgBonus, areaBonus);
+                this.weaponTimers.blower = time;
+            }
+        }
+
+        // 오염측정기 (체인 번개)
+        const detectorLv = this.playerState.weapons.detector || 0;
+        if (detectorLv > 0) {
+            const cd = WEAPONS.detector.baseCooldown * cdBonus * (1 - detectorLv * 0.05);
+            if (time > (this.weaponTimers.detector || 0) + cd) {
+                this.fireDetector(detectorLv, dmgBonus);
+                this.weaponTimers.detector = time;
+            }
+        }
+
+        // 보호장갑 (펀치)
+        const glovesLv = this.playerState.weapons.gloves || 0;
+        if (glovesLv > 0) {
+            const cd = WEAPONS.gloves.baseCooldown * cdBonus * (1 - glovesLv * 0.03);
+            if (time > (this.weaponTimers.gloves || 0) + cd) {
+                this.fireGloves(glovesLv, dmgBonus, areaBonus);
+                this.weaponTimers.gloves = time;
+            }
+        }
+
+        // 소독스프레이 (영역 생성)
+        const sprayLv = this.playerState.weapons.spray || 0;
+        if (sprayLv > 0) {
+            const cd = WEAPONS.spray.baseCooldown * cdBonus * (1 - sprayLv * 0.05);
+            if (time > (this.weaponTimers.spray || 0) + cd) {
+                this.fireSpray(sprayLv, dmgBonus, areaBonus);
+                this.weaponTimers.spray = time;
+            }
+        }
+
+        // 안전콘 (설치 폭탄)
+        const coneLv = this.playerState.weapons.cone || 0;
+        if (coneLv > 0) {
+            const cd = WEAPONS.cone.baseCooldown * cdBonus * (1 - coneLv * 0.05);
+            if (time > (this.weaponTimers.cone || 0) + cd) {
+                this.fireCone(coneLv, dmgBonus, areaBonus);
+                this.weaponTimers.cone = time;
+            }
+        }
+
+        // 청소차 (돌진)
+        const truckLv = this.playerState.weapons.truck || 0;
+        if (truckLv > 0) {
+            const cd = WEAPONS.truck.baseCooldown * cdBonus * (1 - truckLv * 0.05);
+            if (time > (this.weaponTimers.truck || 0) + cd) {
+                this.fireTruck(truckLv, dmgBonus);
+                this.weaponTimers.truck = time;
+            }
+        }
+
+        // 환경드론 (자동 순찰)
+        const droneLv = this.playerState.weapons.drone || 0;
+        if (droneLv > 0) {
+            const cd = WEAPONS.drone.baseCooldown * cdBonus * (1 - droneLv * 0.05);
+            if (time > (this.weaponTimers.drone || 0) + cd) {
+                this.fireDrone(droneLv, dmgBonus);
+                this.weaponTimers.drone = time;
+            }
+        }
+
+        // 폐수파이프 (관통)
+        const pipeLv = this.playerState.weapons.pipe || 0;
+        if (pipeLv > 0) {
+            const cd = WEAPONS.pipe.baseCooldown * cdBonus * (1 - pipeLv * 0.05);
+            if (time > (this.weaponTimers.pipe || 0) + cd) {
+                this.firePipe(pipeLv, dmgBonus);
+                this.weaponTimers.pipe = time;
+            }
+        }
+    }
+
+    // ========== 데미지 처리 함수 (패시브 적용) ==========
+    damageEnemy(enemy, baseDamage) {
+        if (!enemy || !enemy.active) return;
+
+        let finalDamage = baseDamage;
+        let isCrit = false;
+
+        // 크리티컬 확률 체크
+        const critChance = (this.playerState.passives.critChance || 0) * PASSIVES.critChance.effect;
+        if (Math.random() < critChance) {
+            isCrit = true;
+            const critMultiplier = 1.5 + (this.playerState.passives.critDamage || 0) * PASSIVES.critDamage.effect;
+            finalDamage *= critMultiplier;
+        }
+
+        // 데미지 적용
+        enemy.hp -= finalDamage;
+
+        // 크리티컬 이펙트
+        if (isCrit) {
+            const critText = this.add.text(enemy.x, enemy.y - 20, '★' + Math.floor(finalDamage), {
+                fontSize: '16px', fontStyle: 'bold', fill: '#ff5722'
+            }).setOrigin(0.5).setDepth(100);
+
+            this.tweens.add({
+                targets: critText,
+                y: enemy.y - 50,
+                alpha: 0,
+                duration: 600,
+                onComplete: () => critText.destroy()
+            });
+        }
+
+        // 흡혈 효과
+        const lifesteal = (this.playerState.passives.lifesteal || 0) * PASSIVES.lifesteal.effect;
+        if (lifesteal > 0) {
+            const healAmount = finalDamage * lifesteal;
+            this.playerState.hp = Math.min(this.playerState.hp + healAmount, this.playerState.maxHp);
+
+            // 흡혈 파티클 (작은 초록색)
+            if (Math.random() < 0.3) { // 30% 확률로 표시
+                const healParticle = this.add.circle(enemy.x, enemy.y, 4, 0x7cb342, 0.8).setDepth(50);
+                this.tweens.add({
+                    targets: healParticle,
+                    x: this.player.x,
+                    y: this.player.y,
+                    alpha: 0,
+                    duration: 300,
+                    onComplete: () => healParticle.destroy()
+                });
+            }
+        }
+
+        // 적 피격 플래시
+        if (enemy.setTint) {
+            enemy.setTint(0xff0000);
+            this.time.delayedCall(100, () => {
+                if (enemy.active && enemy.clearTint) enemy.clearTint();
+            });
+        }
     }
 
     fireWaterGun(lv, dmgBonus) {
@@ -2846,7 +3041,7 @@ class GameScene extends Phaser.Scene {
         }
 
         // ========== 호스 본체 그리기 (주황+검정 줄무늬) ==========
-        const hoseLength = 40;
+        const hoseLength = 80;  // 40 → 80 (2배 길이)
         const hoseEndX = px + Math.cos(baseAngle) * hoseLength;
         const hoseEndY = py + Math.sin(baseAngle) * hoseLength;
 
@@ -3041,6 +3236,489 @@ class GameScene extends Phaser.Scene {
                 }
             }
         });
+    }
+
+    // ========== 신규 무기 발사 함수 (8종) ==========
+
+    // ★ 산업용 송풍기 - 부채꼴 밀치기 + 데미지
+    fireBlower(lv, dmgBonus, areaBonus) {
+        const px = this.player.x, py = this.player.y;
+        const range = (WEAPONS.blower.range + lv * 15) * areaBonus;
+        const angleWidth = (WEAPONS.blower.angle + lv * 5) * Math.PI / 180;
+        const dmg = WEAPONS.blower.baseDamage * (1 + lv * 0.15) * dmgBonus;
+        const knockback = WEAPONS.blower.knockback + lv * 30;
+
+        // 바라보는 방향
+        const target = this.findClosestEnemy();
+        const baseAngle = target ? Math.atan2(target.y - py, target.x - px) : (this.playerFacingAngle || 0);
+
+        // 바람 이펙트
+        const windGraphics = this.add.graphics().setDepth(11);
+        windGraphics.fillStyle(0x81d4fa, 0.3);
+        windGraphics.beginPath();
+        windGraphics.moveTo(px, py);
+        windGraphics.arc(px, py, range, baseAngle - angleWidth/2, baseAngle + angleWidth/2);
+        windGraphics.closePath();
+        windGraphics.fill();
+
+        // 바람 줄무늬
+        for (let i = 0; i < 5; i++) {
+            const a = baseAngle - angleWidth/2 + (angleWidth / 5) * (i + 0.5);
+            windGraphics.lineStyle(3, 0xb3e5fc, 0.6);
+            windGraphics.beginPath();
+            windGraphics.moveTo(px + Math.cos(a) * 20, py + Math.sin(a) * 20);
+            windGraphics.lineTo(px + Math.cos(a) * range, py + Math.sin(a) * range);
+            windGraphics.stroke();
+        }
+
+        this.tweens.add({
+            targets: windGraphics,
+            alpha: 0,
+            duration: 200,
+            onComplete: () => windGraphics.destroy()
+        });
+
+        // 적 밀치기 + 데미지
+        this.enemies.children.each(e => {
+            if (!e.active) return;
+            const dx = e.x - px, dy = e.y - py;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > range) return;
+
+            const angle = Math.atan2(dy, dx);
+            let angleDiff = angle - baseAngle;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+            if (Math.abs(angleDiff) <= angleWidth / 2) {
+                this.damageEnemy(e, dmg);
+                // 넉백
+                const pushX = Math.cos(angle) * knockback;
+                const pushY = Math.sin(angle) * knockback;
+                e.x += pushX * 0.1;
+                e.y += pushY * 0.1;
+            }
+        });
+    }
+
+    // ★ 오염측정기 - 체인 번개
+    fireDetector(lv, dmgBonus) {
+        const target = this.findClosestEnemy();
+        if (!target) return;
+
+        const chainCount = WEAPONS.detector.chainCount + Math.floor(lv / 2);
+        const chainRange = WEAPONS.detector.chainRange + lv * 10;
+        const dmg = WEAPONS.detector.baseDamage * (1 + lv * 0.15) * dmgBonus;
+
+        const hitEnemies = [target];
+        let current = target;
+
+        // 첫 번째 연결 (플레이어 → 첫 적)
+        this.drawChainLightning(this.player.x, this.player.y, target.x, target.y, 0xffeb3b);
+        this.damageEnemy(target, dmg);
+
+        // 연쇄
+        for (let i = 1; i < chainCount; i++) {
+            let nearest = null;
+            let nearestDist = chainRange;
+
+            this.enemies.children.each(e => {
+                if (!e.active || hitEnemies.includes(e)) return;
+                const dx = e.x - current.x, dy = e.y - current.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearest = e;
+                }
+            });
+
+            if (nearest) {
+                this.drawChainLightning(current.x, current.y, nearest.x, nearest.y, 0xffc107);
+                this.damageEnemy(nearest, dmg * (1 - i * 0.1)); // 연쇄마다 10% 감소
+                hitEnemies.push(nearest);
+                current = nearest;
+            } else {
+                break;
+            }
+        }
+    }
+
+    drawChainLightning(x1, y1, x2, y2, color) {
+        const g = this.add.graphics().setDepth(15);
+        g.lineStyle(4, color, 0.9);
+        g.beginPath();
+        g.moveTo(x1, y1);
+
+        // 지그재그 번개
+        const dx = x2 - x1, dy = y2 - y1;
+        const segments = 5;
+        for (let i = 1; i <= segments; i++) {
+            const t = i / segments;
+            const x = x1 + dx * t + (i < segments ? (Math.random() - 0.5) * 20 : 0);
+            const y = y1 + dy * t + (i < segments ? (Math.random() - 0.5) * 20 : 0);
+            g.lineTo(x, y);
+        }
+        g.stroke();
+
+        // 글로우
+        g.lineStyle(8, color, 0.3);
+        g.beginPath();
+        g.moveTo(x1, y1);
+        g.lineTo(x2, y2);
+        g.stroke();
+
+        this.tweens.add({
+            targets: g,
+            alpha: 0,
+            duration: 150,
+            onComplete: () => g.destroy()
+        });
+    }
+
+    // ★ 보호장갑 - 빠른 펀치
+    fireGloves(lv, dmgBonus, areaBonus) {
+        const px = this.player.x, py = this.player.y;
+        const range = (WEAPONS.gloves.range + lv * 8) * areaBonus;
+        const angleWidth = WEAPONS.gloves.angle * Math.PI / 180;
+        const dmg = WEAPONS.gloves.baseDamage * (1 + lv * 0.2) * dmgBonus;
+
+        const target = this.findClosestEnemy();
+        const baseAngle = target ? Math.atan2(target.y - py, target.x - px) : (this.playerFacingAngle || 0);
+
+        // 펀치 이펙트 (주먹 모양)
+        const fistX = px + Math.cos(baseAngle) * (range * 0.7);
+        const fistY = py + Math.sin(baseAngle) * (range * 0.7);
+
+        const fist = this.add.circle(fistX, fistY, 15, 0xffee58, 1).setDepth(12);
+        const impact = this.add.circle(fistX, fistY, 25, 0xff8f00, 0.5).setDepth(11);
+
+        this.tweens.add({
+            targets: fist,
+            scale: 0,
+            alpha: 0,
+            duration: 150,
+            onComplete: () => fist.destroy()
+        });
+        this.tweens.add({
+            targets: impact,
+            scale: 2,
+            alpha: 0,
+            duration: 200,
+            onComplete: () => impact.destroy()
+        });
+
+        // 범위 내 적 데미지 + 넉백
+        this.enemies.children.each(e => {
+            if (!e.active) return;
+            const dx = e.x - px, dy = e.y - py;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > range) return;
+
+            const angle = Math.atan2(dy, dx);
+            let angleDiff = angle - baseAngle;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+            if (Math.abs(angleDiff) <= angleWidth / 2) {
+                this.damageEnemy(e, dmg);
+                e.x += Math.cos(angle) * 20;
+                e.y += Math.sin(angle) * 20;
+            }
+        });
+    }
+
+    // ★ 소독스프레이 - 영역 생성
+    fireSpray(lv, dmgBonus, areaBonus) {
+        const px = this.player.x, py = this.player.y;
+        const radius = (WEAPONS.spray.radius + lv * 10) * areaBonus;
+        const duration = WEAPONS.spray.duration + lv * 500;
+        const dps = WEAPONS.spray.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const durationBonus = 1 + (this.playerState.passives.duration || 0) * PASSIVES.duration.effect;
+
+        // 초록 안개 영역
+        const zone = this.add.circle(px, py, radius, 0x7cb342, 0.4).setDepth(5);
+
+        // 파티클 효과
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI * 2 / 8) * i;
+            const p = this.add.circle(
+                px + Math.cos(angle) * radius * 0.5,
+                py + Math.sin(angle) * radius * 0.5,
+                5, 0xaed581, 0.6
+            ).setDepth(6);
+
+            this.tweens.add({
+                targets: p,
+                x: px + Math.cos(angle) * radius,
+                y: py + Math.sin(angle) * radius,
+                alpha: 0,
+                duration: duration * durationBonus,
+                repeat: -1
+            });
+        }
+
+        // 지속 데미지
+        const damageTimer = this.time.addEvent({
+            delay: 500,
+            repeat: Math.floor((duration * durationBonus) / 500) - 1,
+            callback: () => {
+                this.enemies.children.each(e => {
+                    if (!e.active) return;
+                    const dx = e.x - px, dy = e.y - py;
+                    if (Math.sqrt(dx*dx + dy*dy) <= radius) {
+                        this.damageEnemy(e, dps);
+                    }
+                });
+            }
+        });
+
+        // 영역 소멸
+        this.tweens.add({
+            targets: zone,
+            alpha: 0,
+            duration: 500,
+            delay: duration * durationBonus - 500,
+            onComplete: () => {
+                zone.destroy();
+                damageTimer.remove();
+            }
+        });
+    }
+
+    // ★ 안전콘 - 설치 후 폭발
+    fireCone(lv, dmgBonus, areaBonus) {
+        const px = this.player.x, py = this.player.y;
+        const target = this.findClosestEnemy();
+        const angle = target ? Math.atan2(target.y - py, target.x - px) : (this.playerFacingAngle || 0);
+
+        const coneX = px + Math.cos(angle) * 80;
+        const coneY = py + Math.sin(angle) * 80;
+
+        const absorbHits = WEAPONS.cone.absorbHits + Math.floor(lv / 2);
+        const explosionRadius = (WEAPONS.cone.explosionRadius + lv * 15) * areaBonus;
+        const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.2) * dmgBonus;
+
+        // 안전콘 그래픽 (주황+검정 줄무늬)
+        const cone = this.add.graphics().setDepth(8);
+        cone.fillStyle(0xff6f00, 1);
+        cone.fillTriangle(coneX, coneY - 25, coneX - 15, coneY + 10, coneX + 15, coneY + 10);
+        cone.fillStyle(0x1a1a1a, 1);
+        cone.fillRect(coneX - 12, coneY - 5, 24, 4);
+        cone.fillRect(coneX - 12, coneY + 3, 24, 4);
+
+        let hits = 0;
+        const hitCheck = this.time.addEvent({
+            delay: 100,
+            repeat: -1,
+            callback: () => {
+                this.enemies.children.each(e => {
+                    if (!e.active) return;
+                    const dx = e.x - coneX, dy = e.y - coneY;
+                    if (Math.sqrt(dx*dx + dy*dy) <= 30) {
+                        hits++;
+                        this.damageEnemy(e, 5); // 접촉 데미지
+                    }
+                });
+
+                if (hits >= absorbHits) {
+                    // 폭발!
+                    hitCheck.remove();
+                    cone.destroy();
+
+                    // 폭발 이펙트
+                    const explosion = this.add.circle(coneX, coneY, explosionRadius, 0xff5722, 0.7).setDepth(15);
+                    this.cameras.main.shake(100, 0.01);
+
+                    this.enemies.children.each(e => {
+                        if (!e.active) return;
+                        const dx = e.x - coneX, dy = e.y - coneY;
+                        if (Math.sqrt(dx*dx + dy*dy) <= explosionRadius) {
+                            this.damageEnemy(e, dmg);
+                        }
+                    });
+
+                    this.tweens.add({
+                        targets: explosion,
+                        scale: 1.5,
+                        alpha: 0,
+                        duration: 300,
+                        onComplete: () => explosion.destroy()
+                    });
+                }
+            }
+        });
+
+        // 5초 후 자동 폭발
+        this.time.delayedCall(5000, () => {
+            if (hitCheck.getProgress() < 1) {
+                hitCheck.remove();
+                cone.destroy();
+            }
+        });
+    }
+
+    // ★ 청소차 - 돌진 공격
+    fireTruck(lv, dmgBonus) {
+        const px = this.player.x, py = this.player.y;
+        const target = this.findClosestEnemy();
+        const angle = target ? Math.atan2(target.y - py, target.x - px) : (this.playerFacingAngle || 0);
+
+        const dashDistance = WEAPONS.truck.dashDistance + lv * 30;
+        const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.2) * dmgBonus;
+
+        // 트럭 그래픽
+        const truck = this.add.graphics().setDepth(12);
+        truck.fillStyle(0xff6f00, 1);
+        truck.fillRect(-20, -12, 40, 24);
+        truck.fillStyle(0x1a1a1a, 1);
+        truck.fillRect(-25, -8, 8, 16);
+        truck.fillStyle(0x424242, 1);
+        truck.fillCircle(-15, 12, 6);
+        truck.fillCircle(15, 12, 6);
+        truck.x = px;
+        truck.y = py;
+
+        const endX = px + Math.cos(angle) * dashDistance;
+        const endY = py + Math.sin(angle) * dashDistance;
+
+        // 돌진 중 데미지
+        const hitEnemies = new Set();
+
+        this.tweens.add({
+            targets: truck,
+            x: endX,
+            y: endY,
+            duration: 400,
+            ease: 'Quad.easeOut',
+            onUpdate: () => {
+                this.enemies.children.each(e => {
+                    if (!e.active || hitEnemies.has(e)) return;
+                    const dx = e.x - truck.x, dy = e.y - truck.y;
+                    if (Math.sqrt(dx*dx + dy*dy) <= 40) {
+                        this.damageEnemy(e, dmg);
+                        hitEnemies.add(e);
+                        // 넉백
+                        e.x += Math.cos(angle) * 50;
+                        e.y += Math.sin(angle) * 50;
+                    }
+                });
+            },
+            onComplete: () => {
+                this.tweens.add({
+                    targets: truck,
+                    alpha: 0,
+                    duration: 200,
+                    onComplete: () => truck.destroy()
+                });
+            }
+        });
+    }
+
+    // ★ 환경드론 - 자동 순찰 공격
+    fireDrone(lv, dmgBonus) {
+        const px = this.player.x, py = this.player.y;
+        const orbitRadius = WEAPONS.drone.orbitRadius + lv * 10;
+        const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.15) * dmgBonus;
+
+        // 가장 가까운 적 찾기
+        const target = this.findClosestEnemy();
+        if (!target) return;
+
+        // 드론 발사체
+        const drone = this.add.graphics().setDepth(12);
+        drone.fillStyle(0x90a4ae, 1);
+        drone.fillRect(-8, -4, 16, 8);
+        drone.fillStyle(0x1565c0, 1);
+        drone.fillCircle(0, 0, 4);
+        drone.x = px;
+        drone.y = py - 30;
+
+        // 타겟으로 이동 후 복귀
+        this.tweens.add({
+            targets: drone,
+            x: target.x,
+            y: target.y,
+            duration: 300,
+            ease: 'Quad.easeIn',
+            onComplete: () => {
+                // 타겟 데미지
+                if (target.active) {
+                    this.damageEnemy(target, dmg);
+
+                    // 충격파
+                    const wave = this.add.circle(target.x, target.y, 20, 0x1565c0, 0.5).setDepth(11);
+                    this.tweens.add({
+                        targets: wave,
+                        scale: 2,
+                        alpha: 0,
+                        duration: 200,
+                        onComplete: () => wave.destroy()
+                    });
+                }
+
+                // 복귀
+                this.tweens.add({
+                    targets: drone,
+                    x: px,
+                    y: py - 30,
+                    alpha: 0,
+                    duration: 200,
+                    onComplete: () => drone.destroy()
+                });
+            }
+        });
+    }
+
+    // ★ 폐수파이프 - 관통 투사체
+    firePipe(lv, dmgBonus) {
+        const target = this.findClosestEnemy();
+        if (!target) return;
+
+        const px = this.player.x, py = this.player.y;
+        const dmg = WEAPONS.pipe.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const speed = WEAPONS.pipe.projectileSpeed + lv * 20;
+        const pierceBonus = (this.playerState.passives.pierce || 0) * PASSIVES.pierce.effect;
+        const projectileBonus = (this.playerState.passives.projectile || 0);
+
+        const angle = Math.atan2(target.y - py, target.x - px);
+        const count = 1 + Math.floor(lv / 3) + projectileBonus;
+
+        for (let i = 0; i < count; i++) {
+            const spreadAngle = angle + (i - (count - 1) / 2) * 0.15;
+
+            // 갈색 파이프 투사체
+            const bullet = this.bullets.get(px, py, 'bullet');
+            if (bullet) {
+                bullet.setActive(true).setVisible(true);
+                bullet.setTint(0x795548);
+                bullet.setScale(1.5);
+                bullet.damage = dmg;
+                bullet.pierce = WEAPONS.pipe.pierce + pierceBonus;
+                bullet.hitEnemies = new Set();
+
+                const vx = Math.cos(spreadAngle) * speed;
+                const vy = Math.sin(spreadAngle) * speed;
+                bullet.setVelocity(vx, vy);
+                bullet.setRotation(spreadAngle);
+
+                // 잔상 효과
+                this.time.addEvent({
+                    delay: 50,
+                    repeat: 5,
+                    callback: () => {
+                        if (!bullet.active) return;
+                        const trail = this.add.circle(bullet.x, bullet.y, 5, 0x795548, 0.3).setDepth(7);
+                        this.tweens.add({
+                            targets: trail,
+                            alpha: 0,
+                            scale: 0,
+                            duration: 200,
+                            onComplete: () => trail.destroy()
+                        });
+                    }
+                });
+            }
+        }
     }
 
     updateCircleField(dt) {
@@ -3591,9 +4269,11 @@ class GameScene extends Phaser.Scene {
     tryDropItem(x, y) {
         // 보물상자 제외한 아이템들 중에서 드롭 확률 체크
         const dropableItems = ['health', 'magnet', 'bomb', 'invincible'];
+        // ★ 행운 패시브 적용
+        const luckBonus = 1 + (this.playerState.passives.luck || 0) * PASSIVES.luck.effect;
 
         for (const itemKey of dropableItems) {
-            if (Math.random() < ITEM_TYPES[itemKey].dropRate) {
+            if (Math.random() < ITEM_TYPES[itemKey].dropRate * luckBonus) {
                 this.dropItem(x, y, itemKey);
                 return; // 하나만 드롭
             }
@@ -3794,7 +4474,10 @@ class GameScene extends Phaser.Scene {
     // 보스 플레이어 충돌 처리
     onPlayerHitBoss(player, boss) {
         if (!boss.active || this.playerState.invincibleTime > 0) return;
-        this.playerState.hp -= boss.bossDamage;
+        // ★ 방어력 패시브 적용
+        const armorReduction = (this.playerState.passives.armor || 0) * PASSIVES.armor.effect;
+        const finalDamage = Math.max(1, boss.bossDamage - armorReduction);
+        this.playerState.hp -= finalDamage;
         this.playerState.invincibleTime = 1500; // 보스에게 맞으면 더 긴 무적
 
         // ★ Game Juice: 보스 피격 효과 (일반보다 강함)
@@ -3883,14 +4566,19 @@ class GameScene extends Phaser.Scene {
 
     onCollectExp(player, exp) {
         if (!exp.active) return;
-        this.playerState.exp += exp.expValue || 1;
+        // ★ 숙련도 보너스 적용
+        const growthBonus = 1 + (this.playerState.passives.growth || 0) * PASSIVES.growth.effect;
+        this.playerState.exp += (exp.expValue || 1) * growthBonus;
         exp.setActive(false).setVisible(false).setVelocity(0,0);
         if (this.playerState.exp >= this.playerState.expToNext) this.levelUp();
     }
 
     onPlayerHit(player, enemy) {
         if (!enemy.active || this.playerState.invincibleTime > 0) return;
-        this.playerState.hp -= enemy.enemyDamage;
+        // ★ 방어력 패시브 적용
+        const armorReduction = (this.playerState.passives.armor || 0) * PASSIVES.armor.effect;
+        const finalDamage = Math.max(1, enemy.enemyDamage - armorReduction);
+        this.playerState.hp -= finalDamage;
         this.playerState.invincibleTime = 1000;
 
         // ★ Game Juice: 피격 효과
