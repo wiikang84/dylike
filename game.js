@@ -4370,7 +4370,7 @@ class GameScene extends Phaser.Scene {
     // ========== 아이템 시스템 ==========
     tryDropItem(x, y) {
         // 보물상자 제외한 아이템들 중에서 드롭 확률 체크
-        const dropableItems = ['health', 'magnet', 'bomb', 'invincible'];
+        const dropableItems = ['health', 'magnet', 'invincible'];  // ★ bomb 제거
         // ★ 행운 패시브 적용
         const luckBonus = 1 + (this.playerState.passives.luck || 0) * PASSIVES.luck.effect;
 
