@@ -3274,11 +3274,10 @@ class GameScene extends Phaser.Scene {
 
     // ★ 준설호스 (흡입형 범위 공격) - 화면을 채우는 스케일
     fireDredgeHose(lv, dmgBonus) {
-        const dmg = WEAPONS.dredgeHose.baseDamage * (1 + lv * 0.25) * dmgBonus;  // ★ 데미지 스케일 증가
-        const range = 300 + lv * 70;  // ★ Lv8 = 860px (거의 화면 전체)
-        const angleWidth = (35 + lv * 5) * Math.PI / 180;  // ★ 각도 더 넓게
-        const pullStrength = 8 + lv * 4;  // ★ 끌어당김 강도 대폭 증가
-        const slowAmount = 0.4 + lv * 0.08;  // ★ 감속량 증가
+        // ★ 너프된 스탯
+        const dmg = WEAPONS.dredgeHose.baseDamage * (1 + lv * 0.15) * dmgBonus;  // 데미지 감소
+        const range = 150 + lv * 25;  // ★ 사거리 대폭 감소
+        const pullStrength = 15 + lv * 5;  // 한 번에 크게 끌어당김
 
         const px = this.player.x;
         const py = this.player.y;
@@ -3292,183 +3291,113 @@ class GameScene extends Phaser.Scene {
             baseAngle = this.playerFacingAngle || 0;
         }
 
-        // ========== 호스 본체 그리기 (레벨에 따라 거대해짐) ==========
-        const hoseLength = 100 + lv * 55;  // ★ Lv8 = 540px (화면 절반 이상)
-        const hoseThickness = 14 + lv * 2;  // ★ 호스 두께도 증가
-        const hoseEndX = px + Math.cos(baseAngle) * hoseLength;
-        const hoseEndY = py + Math.sin(baseAngle) * hoseLength;
-
+        // ========== 뱀처럼 구불구불한 호스 그리기 ==========
+        const hoseLength = 80 + lv * 20;  // ★ 길이 감소
+        const hoseThickness = 8 + lv;
         const hoseGraphics = this.add.graphics().setDepth(12);
+        const time = this.time.now;
 
-        // 호스 외곽 (검정) - 두께 스케일
+        // 호스 경로 계산 (사인파로 구불구불하게)
+        const segments = 15;
+        const points = [];
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const dist = t * hoseLength;
+            // 뱀처럼 구불구불 (사인파)
+            const wave = Math.sin(t * Math.PI * 3 + time * 0.01) * (15 + lv * 2) * t;
+            const perpAngle = baseAngle + Math.PI / 2;
+            const x = px + Math.cos(baseAngle) * dist + Math.cos(perpAngle) * wave;
+            const y = py + Math.sin(baseAngle) * dist + Math.sin(perpAngle) * wave;
+            points.push({ x, y });
+        }
+
+        // 호스 외곽 (검정)
         hoseGraphics.lineStyle(hoseThickness + 4, 0x1a1a1a, 1);
         hoseGraphics.beginPath();
-        hoseGraphics.moveTo(px, py);
-        hoseGraphics.lineTo(hoseEndX, hoseEndY);
+        hoseGraphics.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            hoseGraphics.lineTo(points[i].x, points[i].y);
+        }
         hoseGraphics.stroke();
 
-        // 호스 내부 (주황) - 두께 스케일
+        // 호스 내부 (주황)
         hoseGraphics.lineStyle(hoseThickness, 0xff6f00, 1);
         hoseGraphics.beginPath();
-        hoseGraphics.moveTo(px, py);
-        hoseGraphics.lineTo(hoseEndX, hoseEndY);
+        hoseGraphics.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            hoseGraphics.lineTo(points[i].x, points[i].y);
+        }
         hoseGraphics.stroke();
 
-        // 호스 줄무늬 (길이에 비례해서 개수 증가)
-        const stripeCount = Math.floor(hoseLength / 40);
-        hoseGraphics.lineStyle(3, 0x1a1a1a, 0.6);
-        for (let i = 0; i < stripeCount; i++) {
-            const t = (i + 1) / (stripeCount + 1);
-            const sx = px + (hoseEndX - px) * t;
-            const sy = py + (hoseEndY - py) * t;
-            hoseGraphics.strokeCircle(sx, sy, hoseThickness / 2);
+        // 호스 줄무늬
+        hoseGraphics.lineStyle(2, 0x1a1a1a, 0.5);
+        for (let i = 3; i < points.length; i += 3) {
+            hoseGraphics.strokeCircle(points[i].x, points[i].y, hoseThickness / 2);
         }
 
-        // ========== 소용돌이 이펙트 (레벨에 따라 거대해짐) ==========
-        const vortexGraphics = this.add.graphics().setDepth(13);
-        const vortexDist = 20 + lv * 5;
-        const vortexX = hoseEndX + Math.cos(baseAngle) * vortexDist;
-        const vortexY = hoseEndY + Math.sin(baseAngle) * vortexDist;
-        const vortexBaseSize = 25 + lv * 10;  // ★ 소용돌이 크기 대폭 증가
-
-        // 소용돌이 원들 (회전 느낌) - 크기 증가
-        for (let i = 0; i < 5; i++) {
-            const radius = vortexBaseSize + i * (10 + lv * 2);
-            const alpha = 0.6 - i * 0.1;
-            vortexGraphics.lineStyle(4 + lv * 0.5, 0xff8f00, alpha);
-            vortexGraphics.beginPath();
-            vortexGraphics.arc(vortexX, vortexY, radius,
-                baseAngle - angleWidth/2 + i * 0.15,
-                baseAngle + angleWidth/2 - i * 0.15);
-            vortexGraphics.stroke();
-        }
-
-        // 소용돌이 중심 (크기 증가)
-        const centerSize = 10 + lv * 3;
-        vortexGraphics.fillStyle(0x4a2c00, 0.8);
-        vortexGraphics.fillCircle(vortexX, vortexY, centerSize);
-        vortexGraphics.fillStyle(0x1a1a1a, 1);
-        vortexGraphics.fillCircle(vortexX, vortexY, centerSize * 0.5);
-
-        // ★ 흡입 파티클 이펙트 (나선형으로 빨려들어옴)
-        const particleCount = 6 + lv * 2;
-        for (let i = 0; i < particleCount; i++) {
-            const startDist = range * (0.3 + Math.random() * 0.7);
-            const particleAngle = baseAngle + (Math.random() - 0.5) * angleWidth;
-            const startX = px + Math.cos(particleAngle) * startDist;
-            const startY = py + Math.sin(particleAngle) * startDist;
-            const particleSize = 6 + lv + Math.random() * 4;
-
-            const particle = this.add.circle(startX, startY, particleSize, 0xffab40, 0.8).setDepth(14);
-
-            // 나선형으로 빨려들어오는 애니메이션
-            this.tweens.add({
-                targets: particle,
-                x: vortexX,
-                y: vortexY,
-                scale: 0.2,
-                alpha: 0,
-                duration: 300 + Math.random() * 200,
-                ease: 'Cubic.easeIn',
-                onComplete: () => particle.destroy()
-            });
-        }
-
-        // 호스 진동 효과 (강도 증가)
-        this.tweens.add({
-            targets: [hoseGraphics, vortexGraphics],
-            x: { from: -3 - lv * 0.5, to: 3 + lv * 0.5 },
-            duration: 40,
-            yoyo: true,
-            repeat: 2
-        });
+        // 호스 끝 (흡입구)
+        const hoseEnd = points[points.length - 1];
+        hoseGraphics.fillStyle(0x1a1a1a, 1);
+        hoseGraphics.fillCircle(hoseEnd.x, hoseEnd.y, hoseThickness + 2);
+        hoseGraphics.fillStyle(0x4a2c00, 0.9);
+        hoseGraphics.fillCircle(hoseEnd.x, hoseEnd.y, hoseThickness - 2);
 
         // 이펙트 페이드아웃
         this.tweens.add({
-            targets: [hoseGraphics, vortexGraphics],
+            targets: hoseGraphics,
             alpha: 0,
-            duration: 150,
-            delay: 50,
-            onComplete: () => {
-                hoseGraphics.destroy();
-                vortexGraphics.destroy();
-            }
+            duration: 200,
+            delay: 100,
+            onComplete: () => hoseGraphics.destroy()
         });
 
-        // ========== 범위 내 적 처리 ==========
-        const affectedEnemies = [];
+        // ========== 한 마리만 흡입 (가장 가까운 적) ==========
+        let closestEnemy = null;
+        let closestDist = range;
 
         this.enemies.children.each(e => {
             if (!e.active) return;
+            const dx = e.x - hoseEnd.x;
+            const dy = e.y - hoseEnd.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
 
-            const dx = e.x - px;
-            const dy = e.y - py;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-
-            if (dist <= range && dist > 30) {  // 너무 가까우면 제외
-                const angle = Math.atan2(dy, dx);
-                let angleDiff = angle - baseAngle;
-                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-
-                if (Math.abs(angleDiff) <= angleWidth / 2) {
-                    // 데미지
-                    e.hp -= dmg;
-
-                    // ★ 끌어당김 효과
-                    const pullX = -dx / dist * pullStrength;
-                    const pullY = -dy / dist * pullStrength;
-                    e.x += pullX;
-                    e.y += pullY;
-
-                    // ★ 감속 효과 (일시적)
-                    if (!e.isSlowed) {
-                        e.isSlowed = true;
-                        e.originalSpeed = e.enemySpeed;
-                        e.enemySpeed = e.enemySpeed * (1 - slowAmount);
-                        this.time.delayedCall(500, () => {
-                            if (e.active) {
-                                e.enemySpeed = e.originalSpeed || e.enemySpeed;
-                                e.isSlowed = false;
-                            }
-                        });
-                    }
-
-                    affectedEnemies.push(e);
-                }
+            if (dist < closestDist && dist < 80) {  // 흡입구 근처만
+                closestDist = dist;
+                closestEnemy = e;
             }
         });
 
-        // 보스에게도 적용 (끌어당김은 약하게)
-        this.bosses.children.each(b => {
-            if (!b.active) return;
+        // 가장 가까운 적 한 마리만 처리
+        if (closestEnemy) {
+            const e = closestEnemy;
+            const dx = e.x - hoseEnd.x;
+            const dy = e.y - hoseEnd.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
 
-            const dx = b.x - px;
-            const dy = b.y - py;
-            const dist = Math.sqrt(dx*dx + dy*dy);
+            // 데미지
+            e.hp -= dmg;
 
-            if (dist <= range) {
-                const angle = Math.atan2(dy, dx);
-                let angleDiff = angle - baseAngle;
-                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+            // ★ 빨려들어오는 모션 (호스 끝으로)
+            this.tweens.add({
+                targets: e,
+                x: e.x - dx * 0.6,  // 60%만 끌어당김
+                y: e.y - dy * 0.6,
+                duration: 150,
+                ease: 'Quad.easeIn'
+            });
 
-                if (Math.abs(angleDiff) <= angleWidth / 2) {
-                    b.hp -= dmg;
-                    // 보스는 끌어당김 1/3
-                    b.x -= dx / dist * (pullStrength / 3);
-                    b.y -= dy / dist * (pullStrength / 3);
-                }
-            }
-        });
+            // 흡입 이펙트
+            this.createSuctionParticle(e.x, e.y, hoseEnd.x, hoseEnd.y);
 
-        // ========== 흡입 파티클 (적 → 플레이어) ==========
-        affectedEnemies.forEach(e => {
-            this.createSuctionParticle(e.x, e.y, px, py);
-        });
+            // 적 깜빡임
+            e.setTint(0xff6f00);
+            this.time.delayedCall(100, () => {
+                if (e.active) e.clearTint();
+            });
+        }
 
-        // ★ 경험치 자동 흡입
-        this.suctionExpOrbs(px, py, baseAngle, angleWidth, range);
+        // ★ 경험치 자동 흡입 (범위 축소)
+        this.suctionExpOrbs(hoseEnd.x, hoseEnd.y, baseAngle, Math.PI, 60);
     }
 
     // ★ 흡입 파티클 생성 (적에서 플레이어로 빨려옴)
