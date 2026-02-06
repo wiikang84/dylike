@@ -2834,24 +2834,129 @@ class GameScene extends Phaser.Scene {
         if (this.isPaused) {
             this.physics.pause();
             this.pauseBtn.setText('▶️');
+
+            // 정지 UI 요소들을 배열로 관리
+            this.pauseUI = [];
+
             // 정지 오버레이
-            this.pauseOverlay = this.add.rectangle(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, CONFIG.WIDTH, CONFIG.HEIGHT, 0x000000, 0.7)
+            this.pauseOverlay = this.add.rectangle(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, CONFIG.WIDTH, CONFIG.HEIGHT, 0x000000, 0.8)
                 .setScrollFactor(0).setDepth(200);
-            this.pauseText = this.add.text(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, '일시정지\n\n터치하거나 ESC로 계속', {
-                fontSize: '28px',
+            this.pauseUI.push(this.pauseOverlay);
+
+            // 일시정지 타이틀
+            const pauseTitle = this.add.text(CONFIG.WIDTH/2, 120, '⏸️ 일시정지', {
+                fontSize: '36px',
                 fontStyle: 'bold',
-                fill: '#fff',
-                align: 'center'
+                fill: '#fff'
             }).setScrollFactor(0).setDepth(201).setOrigin(0.5);
-            this.pauseText.setInteractive();
-            this.pauseText.on('pointerdown', () => this.togglePause());
-            this.pauseOverlay.setInteractive();
-            this.pauseOverlay.on('pointerdown', () => this.togglePause());
+            this.pauseUI.push(pauseTitle);
+
+            // 현재 상태 표시
+            const statusText = this.add.text(CONFIG.WIDTH/2, 170,
+                `${CLASS_TYPES[this.playerState.className]?.icon || ''} ${CLASS_TYPES[this.playerState.className]?.name || ''} | Lv.${this.playerState.level} | 🏢 ${this.playerState.currentFloor}층`, {
+                fontSize: '16px',
+                fill: '#aaa'
+            }).setScrollFactor(0).setDepth(201).setOrigin(0.5);
+            this.pauseUI.push(statusText);
+
+            // ===== 계속하기 버튼 =====
+            const continueBtn = this.add.rectangle(CONFIG.WIDTH/2, 240, 220, 50, 0x00a8e8)
+                .setStrokeStyle(2, 0x5dc8f7)
+                .setScrollFactor(0).setDepth(201)
+                .setInteractive({ useHandCursor: true });
+            this.pauseUI.push(continueBtn);
+
+            const continueText = this.add.text(CONFIG.WIDTH/2, 240, '▶️ 계속하기', {
+                fontSize: '20px', fontStyle: 'bold', fill: '#fff'
+            }).setScrollFactor(0).setDepth(202).setOrigin(0.5);
+            this.pauseUI.push(continueText);
+
+            continueBtn.on('pointerover', () => continueBtn.setFillStyle(0x1e88e5));
+            continueBtn.on('pointerout', () => continueBtn.setFillStyle(0x00a8e8));
+            continueBtn.on('pointerdown', () => this.togglePause());
+
+            // ===== 처음부터 다시하기 버튼 =====
+            const restartBtn = this.add.rectangle(CONFIG.WIDTH/2, 310, 220, 50, 0x7cb342)
+                .setStrokeStyle(2, 0x9ccc65)
+                .setScrollFactor(0).setDepth(201)
+                .setInteractive({ useHandCursor: true });
+            this.pauseUI.push(restartBtn);
+
+            const restartText = this.add.text(CONFIG.WIDTH/2, 310, '🔄 처음부터 다시', {
+                fontSize: '18px', fontStyle: 'bold', fill: '#fff'
+            }).setScrollFactor(0).setDepth(202).setOrigin(0.5);
+            this.pauseUI.push(restartText);
+
+            restartBtn.on('pointerover', () => restartBtn.setFillStyle(0x689f38));
+            restartBtn.on('pointerout', () => restartBtn.setFillStyle(0x7cb342));
+            restartBtn.on('pointerdown', () => {
+                // 같은 클래스로 새 게임 시작
+                this.clearPauseUI();
+                this.scene.restart({ selectedClass: this.playerState.className });
+            });
+
+            // ===== 클래스 선택으로 버튼 =====
+            const classBtn = this.add.rectangle(CONFIG.WIDTH/2, 380, 220, 50, 0x9c27b0)
+                .setStrokeStyle(2, 0xba68c8)
+                .setScrollFactor(0).setDepth(201)
+                .setInteractive({ useHandCursor: true });
+            this.pauseUI.push(classBtn);
+
+            const classText = this.add.text(CONFIG.WIDTH/2, 380, '👤 클래스 선택', {
+                fontSize: '18px', fontStyle: 'bold', fill: '#fff'
+            }).setScrollFactor(0).setDepth(202).setOrigin(0.5);
+            this.pauseUI.push(classText);
+
+            classBtn.on('pointerover', () => classBtn.setFillStyle(0x7b1fa2));
+            classBtn.on('pointerout', () => classBtn.setFillStyle(0x9c27b0));
+            classBtn.on('pointerdown', () => {
+                this.clearPauseUI();
+                this.scene.start('ClassSelectScene');
+            });
+
+            // ===== 메인으로 버튼 =====
+            const mainBtn = this.add.rectangle(CONFIG.WIDTH/2, 450, 220, 50, 0xe53935)
+                .setStrokeStyle(2, 0xef5350)
+                .setScrollFactor(0).setDepth(201)
+                .setInteractive({ useHandCursor: true });
+            this.pauseUI.push(mainBtn);
+
+            const mainText = this.add.text(CONFIG.WIDTH/2, 450, '🏠 메인으로', {
+                fontSize: '18px', fontStyle: 'bold', fill: '#fff'
+            }).setScrollFactor(0).setDepth(202).setOrigin(0.5);
+            this.pauseUI.push(mainText);
+
+            mainBtn.on('pointerover', () => mainBtn.setFillStyle(0xc62828));
+            mainBtn.on('pointerout', () => mainBtn.setFillStyle(0xe53935));
+            mainBtn.on('pointerdown', () => {
+                this.clearPauseUI();
+                this.scene.start('TitleScene');
+            });
+
+            // ESC 안내
+            const escHint = this.add.text(CONFIG.WIDTH/2, CONFIG.HEIGHT - 30, 'ESC: 계속하기', {
+                fontSize: '14px', fill: '#666'
+            }).setScrollFactor(0).setDepth(201).setOrigin(0.5);
+            this.pauseUI.push(escHint);
+
         } else {
             this.physics.resume();
             this.pauseBtn.setText('⏸️');
-            if (this.pauseOverlay) this.pauseOverlay.destroy();
-            if (this.pauseText) this.pauseText.destroy();
+            this.clearPauseUI();
+        }
+    }
+
+    // ★ 일시정지 UI 정리
+    clearPauseUI() {
+        if (this.pauseUI) {
+            this.pauseUI.forEach(obj => {
+                if (obj && obj.destroy) obj.destroy();
+            });
+            this.pauseUI = [];
+        }
+        if (this.pauseOverlay) {
+            this.pauseOverlay.destroy();
+            this.pauseOverlay = null;
         }
     }
 
