@@ -2452,32 +2452,44 @@ class GameScene extends Phaser.Scene {
 
         const startY = 25;
         const iconSize = 28;
-        const gap = 32;
+        const gap = 36;  // 간격 늘림
         let idx = 0;
 
         // 무기 표시 (상단)
         for (const [key, level] of Object.entries(this.playerState.weapons)) {
             if (level > 0 && WEAPONS[key]) {
                 const y = startY + idx * gap;
+                const maxLevel = WEAPONS[key].maxLevel || 8;
+                const isMax = level >= maxLevel;
 
-                // 아이콘 배경
+                // 아이콘 배경 (MAX면 금색 테두리)
+                const borderColor = isMax ? 0xffd700 : 0x00a8e8;
                 const bg = this.add.rectangle(25, y, iconSize, iconSize, 0x1a1a2e, 0.8)
-                    .setStrokeStyle(2, 0x00a8e8);
+                    .setStrokeStyle(isMax ? 3 : 2, borderColor);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
+                // MAX면 배경 빛남 효과
+                if (isMax) {
+                    const glow = this.add.rectangle(25, y, iconSize + 4, iconSize + 4, 0xffd700, 0.2);
+                    this.skillUI.add(glow);
+                    this.skillIcons.push(glow);
+                }
+
                 // 아이콘 (이모지)
-                const icon = this.add.text(25, y, WEAPONS[key].icon, {
+                const icon = this.add.text(25, y - 2, WEAPONS[key].icon, {
                     fontSize: '16px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시
-                const lvText = this.add.text(40, y + 8, level.toString(), {
-                    fontSize: '10px',
+                // 레벨 표시 (MAX 또는 숫자/최대)
+                const lvDisplayText = isMax ? 'MAX' : `${level}/${maxLevel}`;
+                const lvColor = isMax ? '#ffd700' : '#00a8e8';
+                const lvText = this.add.text(25, y + 12, lvDisplayText, {
+                    fontSize: '8px',
                     fontStyle: 'bold',
-                    fill: '#ffd700'
+                    fill: lvColor
                 }).setOrigin(0.5);
                 this.skillUI.add(lvText);
                 this.skillIcons.push(lvText);
@@ -2491,26 +2503,38 @@ class GameScene extends Phaser.Scene {
         idx = 0;
         for (const [key, level] of Object.entries(this.playerState.passives)) {
             if (level > 0 && PASSIVES[key]) {
-                const y = 160 + idx * gap;
+                const y = 175 + idx * gap;  // 위치 조정
+                const maxLevel = PASSIVES[key].maxLevel || 5;
+                const isMax = level >= maxLevel;
 
-                // 아이콘 배경
+                // 아이콘 배경 (MAX면 금색 테두리)
+                const borderColor = isMax ? 0xffd700 : 0x7cb342;
                 const bg = this.add.rectangle(25, y, iconSize, iconSize, 0x1a1a2e, 0.8)
-                    .setStrokeStyle(2, 0x7cb342);
+                    .setStrokeStyle(isMax ? 3 : 2, borderColor);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
+                // MAX면 배경 빛남 효과
+                if (isMax) {
+                    const glow = this.add.rectangle(25, y, iconSize + 4, iconSize + 4, 0xffd700, 0.2);
+                    this.skillUI.add(glow);
+                    this.skillIcons.push(glow);
+                }
+
                 // 아이콘 (이모지)
-                const icon = this.add.text(25, y, PASSIVES[key].icon, {
+                const icon = this.add.text(25, y - 2, PASSIVES[key].icon, {
                     fontSize: '16px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시
-                const lvText = this.add.text(40, y + 8, level.toString(), {
-                    fontSize: '10px',
+                // 레벨 표시 (MAX 또는 숫자/최대)
+                const lvDisplayText = isMax ? 'MAX' : `${level}/${maxLevel}`;
+                const lvColor = isMax ? '#ffd700' : '#7cb342';
+                const lvText = this.add.text(25, y + 12, lvDisplayText, {
+                    fontSize: '8px',
                     fontStyle: 'bold',
-                    fill: '#7cb342'
+                    fill: lvColor
                 }).setOrigin(0.5);
                 this.skillUI.add(lvText);
                 this.skillIcons.push(lvText);
@@ -2801,47 +2825,102 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    // ★ 준설호스 (부채꼴 범위 공격)
+    // ★ 준설호스 (흡입형 범위 공격) - 완전 재설계
     fireDredgeHose(lv, dmgBonus) {
         const dmg = WEAPONS.dredgeHose.baseDamage * (1 + lv * 0.15) * dmgBonus;
-        const range = WEAPONS.dredgeHose.range + lv * 15;  // 레벨당 사거리 증가
-        const angleWidth = (WEAPONS.dredgeHose.angle + lv * 5) * Math.PI / 180;  // 레벨당 각도 증가
+        const range = WEAPONS.dredgeHose.range + lv * 20;  // 레벨당 사거리 증가 (더 길게)
+        const angleWidth = (30 + lv * 3) * Math.PI / 180;  // 30도 기본 (좁은 원뿔)
+        const pullStrength = 5 + lv * 2;  // 끌어당김 강도
+        const slowAmount = 0.3 + lv * 0.05;  // 감속량 (30% + 레벨당 5%)
 
-        // 플레이어가 바라보는 방향 (가장 가까운 적 방향 우선, 없으면 이동 방향)
+        const px = this.player.x;
+        const py = this.player.y;
+
+        // 플레이어가 바라보는 방향
         const target = this.findClosestEnemy();
         let baseAngle;
         if (target) {
-            baseAngle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
+            baseAngle = Math.atan2(target.y - py, target.x - px);
         } else {
             baseAngle = this.playerFacingAngle || 0;
         }
 
-        // 부채꼴 이펙트 그리기
-        const graphics = this.add.graphics().setDepth(15);
-        graphics.fillStyle(0x00bcd4, 0.3);
-        graphics.beginPath();
-        graphics.moveTo(this.player.x, this.player.y);
-        graphics.arc(this.player.x, this.player.y, range, baseAngle - angleWidth/2, baseAngle + angleWidth/2);
-        graphics.closePath();
-        graphics.fill();
+        // ========== 호스 본체 그리기 (주황+검정 줄무늬) ==========
+        const hoseLength = 40;
+        const hoseEndX = px + Math.cos(baseAngle) * hoseLength;
+        const hoseEndY = py + Math.sin(baseAngle) * hoseLength;
 
-        // 테두리
-        graphics.lineStyle(3, 0x00e5ff, 0.7);
-        graphics.beginPath();
-        graphics.arc(this.player.x, this.player.y, range, baseAngle - angleWidth/2, baseAngle + angleWidth/2);
-        graphics.stroke();
+        const hoseGraphics = this.add.graphics().setDepth(12);
+
+        // 호스 외곽 (검정)
+        hoseGraphics.lineStyle(12, 0x1a1a1a, 1);
+        hoseGraphics.beginPath();
+        hoseGraphics.moveTo(px, py);
+        hoseGraphics.lineTo(hoseEndX, hoseEndY);
+        hoseGraphics.stroke();
+
+        // 호스 내부 (주황)
+        hoseGraphics.lineStyle(8, 0xff6f00, 1);
+        hoseGraphics.beginPath();
+        hoseGraphics.moveTo(px, py);
+        hoseGraphics.lineTo(hoseEndX, hoseEndY);
+        hoseGraphics.stroke();
+
+        // 호스 줄무늬 (나선형 느낌)
+        hoseGraphics.lineStyle(2, 0x1a1a1a, 0.6);
+        for (let i = 0; i < 4; i++) {
+            const t = (i + 1) / 5;
+            const sx = px + (hoseEndX - px) * t;
+            const sy = py + (hoseEndY - py) * t;
+            hoseGraphics.strokeCircle(sx, sy, 5);
+        }
+
+        // ========== 소용돌이 이펙트 (호스 끝) ==========
+        const vortexGraphics = this.add.graphics().setDepth(13);
+        const vortexX = hoseEndX + Math.cos(baseAngle) * 15;
+        const vortexY = hoseEndY + Math.sin(baseAngle) * 15;
+
+        // 소용돌이 원들 (회전 느낌)
+        for (let i = 0; i < 3; i++) {
+            const radius = 10 + i * 8;
+            const alpha = 0.5 - i * 0.15;
+            vortexGraphics.lineStyle(3, 0xff8f00, alpha);
+            vortexGraphics.beginPath();
+            vortexGraphics.arc(vortexX, vortexY, radius,
+                baseAngle - angleWidth/2 + i * 0.2,
+                baseAngle + angleWidth/2 - i * 0.2);
+            vortexGraphics.stroke();
+        }
+
+        // 소용돌이 중심
+        vortexGraphics.fillStyle(0x4a2c00, 0.8);
+        vortexGraphics.fillCircle(vortexX, vortexY, 8);
+        vortexGraphics.fillStyle(0x1a1a1a, 1);
+        vortexGraphics.fillCircle(vortexX, vortexY, 4);
+
+        // 호스 진동 효과
+        this.tweens.add({
+            targets: [hoseGraphics, vortexGraphics],
+            x: { from: -2, to: 2 },
+            duration: 50,
+            yoyo: true,
+            repeat: 1
+        });
 
         // 이펙트 페이드아웃
         this.tweens.add({
-            targets: graphics,
+            targets: [hoseGraphics, vortexGraphics],
             alpha: 0,
-            duration: 150,
-            onComplete: () => graphics.destroy()
+            duration: 120,
+            delay: 30,
+            onComplete: () => {
+                hoseGraphics.destroy();
+                vortexGraphics.destroy();
+            }
         });
 
-        // 범위 내 적에게 데미지
-        const px = this.player.x;
-        const py = this.player.y;
+        // ========== 범위 내 적 처리 ==========
+        const affectedEnemies = [];
 
         this.enemies.children.each(e => {
             if (!e.active) return;
@@ -2850,21 +2929,41 @@ class GameScene extends Phaser.Scene {
             const dy = e.y - py;
             const dist = Math.sqrt(dx*dx + dy*dy);
 
-            if (dist <= range) {
+            if (dist <= range && dist > 30) {  // 너무 가까우면 제외
                 const angle = Math.atan2(dy, dx);
                 let angleDiff = angle - baseAngle;
-
-                // 각도 정규화 (-PI ~ PI)
                 while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
                 while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
                 if (Math.abs(angleDiff) <= angleWidth / 2) {
+                    // 데미지
                     e.hp -= dmg;
+
+                    // ★ 끌어당김 효과
+                    const pullX = -dx / dist * pullStrength;
+                    const pullY = -dy / dist * pullStrength;
+                    e.x += pullX;
+                    e.y += pullY;
+
+                    // ★ 감속 효과 (일시적)
+                    if (!e.isSlowed) {
+                        e.isSlowed = true;
+                        e.originalSpeed = e.enemySpeed;
+                        e.enemySpeed = e.enemySpeed * (1 - slowAmount);
+                        this.time.delayedCall(500, () => {
+                            if (e.active) {
+                                e.enemySpeed = e.originalSpeed || e.enemySpeed;
+                                e.isSlowed = false;
+                            }
+                        });
+                    }
+
+                    affectedEnemies.push(e);
                 }
             }
         });
 
-        // 보스에게도 적용
+        // 보스에게도 적용 (끌어당김은 약하게)
         this.bosses.children.each(b => {
             if (!b.active) return;
 
@@ -2875,12 +2974,70 @@ class GameScene extends Phaser.Scene {
             if (dist <= range) {
                 const angle = Math.atan2(dy, dx);
                 let angleDiff = angle - baseAngle;
-
                 while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
                 while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
                 if (Math.abs(angleDiff) <= angleWidth / 2) {
                     b.hp -= dmg;
+                    // 보스는 끌어당김 1/3
+                    b.x -= dx / dist * (pullStrength / 3);
+                    b.y -= dy / dist * (pullStrength / 3);
+                }
+            }
+        });
+
+        // ========== 흡입 파티클 (적 → 플레이어) ==========
+        affectedEnemies.forEach(e => {
+            this.createSuctionParticle(e.x, e.y, px, py);
+        });
+
+        // ★ 경험치 자동 흡입
+        this.suctionExpOrbs(px, py, baseAngle, angleWidth, range);
+    }
+
+    // ★ 흡입 파티클 생성 (적에서 플레이어로 빨려옴)
+    createSuctionParticle(fromX, fromY, toX, toY) {
+        const colors = [0xff6f00, 0xff8f00, 0xffab40, 0x4a2c00];
+        const color = Phaser.Math.RND.pick(colors);
+
+        const particle = this.add.circle(fromX, fromY, 3 + Math.random() * 3, color, 0.8)
+            .setDepth(14);
+
+        // 곡선 경로로 플레이어에게 빨려옴
+        const midX = (fromX + toX) / 2 + (Math.random() - 0.5) * 50;
+        const midY = (fromY + toY) / 2 + (Math.random() - 0.5) * 50;
+
+        this.tweens.add({
+            targets: particle,
+            x: { value: toX, duration: 300 },
+            y: { value: toY, duration: 300 },
+            scale: { from: 1, to: 0.3 },
+            alpha: { from: 0.8, to: 0 },
+            ease: 'Quad.easeIn',
+            onComplete: () => particle.destroy()
+        });
+    }
+
+    // ★ 경험치 자동 흡입 (준설호스 범위 내)
+    suctionExpOrbs(px, py, baseAngle, angleWidth, range) {
+        this.expOrbs.children.each(exp => {
+            if (!exp.active) return;
+
+            const dx = exp.x - px;
+            const dy = exp.y - py;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist <= range) {
+                const angle = Math.atan2(dy, dx);
+                let angleDiff = angle - baseAngle;
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+                if (Math.abs(angleDiff) <= angleWidth / 2) {
+                    // 경험치를 플레이어에게 빠르게 끌어당김
+                    const pullSpeed = 15;
+                    exp.x -= dx / dist * pullSpeed;
+                    exp.y -= dy / dist * pullSpeed;
                 }
             }
         });
