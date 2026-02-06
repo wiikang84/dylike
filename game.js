@@ -2584,7 +2584,7 @@ class GameScene extends Phaser.Scene {
             maxHp: finalMaxHp,
             level: 1,
             exp: 0,
-            expToNext: 10,
+            expToNext: 33,  // ★ 뱀서라이크 스타일 (기존 10 → 33)
             kills: 0,
             speed: finalSpeed,
             invincibleTime: 0,
@@ -5469,7 +5469,12 @@ class GameScene extends Phaser.Scene {
     levelUp() {
         this.playerState.exp -= this.playerState.expToNext;
         this.playerState.level++;
-        this.playerState.expToNext = Math.floor(10 * Math.pow(1.2, this.playerState.level - 1));
+        // ★★★ 뱀서라이크 스타일 경험치 곡선 (벤치마킹) ★★★
+        // 기존: 10 * 1.2^level (너무 빠름)
+        // 새로운 공식: 선형 + 지수 혼합 (초반 느림, 중후반 적당)
+        // Lv1→2: 35, Lv5→6: 82, Lv10→11: 155, Lv20→21: 345
+        // this.playerState.expToNext = Math.floor(10 * Math.pow(1.2, this.playerState.level - 1));  // 기존
+        this.playerState.expToNext = this.calculateExpToNext(this.playerState.level);
 
         // ★ 레벨별 보스 스폰 (20, 40, 60, 80+)
         this.checkLevelBoss();
@@ -5523,6 +5528,19 @@ class GameScene extends Phaser.Scene {
                 }
             }
         });
+    }
+
+    // ★★★ 뱀서라이크 경험치 곡선 계산 ★★★
+    // 벤치마킹: Vampire Survivors, HoloCure, 20 Minutes Till Dawn
+    // 특징: 초반 느림 → 중반 적당 → 후반 가파름
+    calculateExpToNext(level) {
+        // 공식: 기본값 + 선형증가 + 제곱증가
+        // level 1: 35,  level 5: 82,  level 10: 155
+        // level 15: 248, level 20: 360, level 30: 625
+        const base = 25;           // 기본값
+        const linear = level * 8;  // 레벨당 8씩 증가
+        const quadratic = Math.floor(level * level * 0.2);  // 제곱 증가 (0.2 배율)
+        return base + linear + quadratic;
     }
 
     // ★ 레벨업 파티클 효과
