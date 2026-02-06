@@ -4179,12 +4179,12 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // ★ 안전콘 - 포토캐논 스타일: 캐릭터 옆에서 미사일 발사하다가 사라짐
+    // ★★★ 터렛 - 하이브리드 스타일 (깔끔한 본체 + 화려한 이펙트) ★★★
     fireCone(lv, dmgBonus, areaBonus) {
         const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.25) * dmgBonus;
-        const duration = 5000 + lv * 500;  // 기본 5초, 레벨당 0.5초 증가
-        const attackCooldown = Math.max(300, 500 - lv * 20);  // 레벨당 발사 속도 증가
-        const attackRange = 200 + lv * 20;  // 사거리
+        const duration = 5000 + lv * 500;
+        const attackCooldown = Math.max(300, 500 - lv * 20);
+        const attackRange = 200 + lv * 20;
 
         // 플레이어 주변 위치
         const angle = Math.random() * Math.PI * 2;
@@ -4192,160 +4192,58 @@ class GameScene extends Phaser.Scene {
         const offsetX = Math.cos(angle) * dist;
         const offsetY = Math.sin(angle) * dist;
 
-        // ★ 터렛 그래픽 (SF 스타일 포탑)
-        const cone = this.add.graphics().setDepth(12);
-        // 베이스 (원형)
-        cone.fillStyle(0x37474f, 1);
-        cone.fillCircle(0, 5, 18);
-        cone.fillStyle(0x455a64, 1);
-        cone.fillCircle(0, 5, 14);
+        // ★ 소환 이펙트
+        const summonX = this.player.x + offsetX;
+        const summonY = this.player.y + offsetY;
+        this.createSummonEffect(summonX, summonY, 0xff6f00);
+
+        // ★ 컨테이너로 터렛 구성 (회전 가능)
+        const turretContainer = this.add.container(summonX, summonY).setDepth(12);
+
+        // 그림자
+        const shadow = this.add.ellipse(0, 12, 36, 12, 0x000000, 0.3);
+
+        // 베이스 (원형, 그라데이션 효과)
+        const base1 = this.add.circle(0, 5, 20, 0x37474f);
+        const base2 = this.add.circle(0, 5, 16, 0x546e7a);
+        const baseHighlight = this.add.circle(-5, 2, 4, 0x78909c, 0.5);
+
         // 포탑 본체
-        cone.fillStyle(0xff6f00, 1);
-        cone.fillRect(-8, -20, 16, 25);
-        // 포신
-        cone.fillStyle(0xffab00, 1);
-        cone.fillRect(-4, -30, 8, 15);
-        cone.fillStyle(0xff5722, 1);
-        cone.fillCircle(0, -30, 5);
-        // 디테일
-        cone.fillStyle(0x1a1a1a, 1);
-        cone.fillRect(-10, -8, 20, 3);
-        cone.fillRect(-10, 0, 20, 3);
-        // 에너지 코어
-        cone.fillStyle(0x00e5ff, 0.8);
-        cone.fillCircle(0, -5, 4);
-        cone.x = this.player.x + offsetX;
-        cone.y = this.player.y + offsetY;
+        const turretBody = this.add.rectangle(0, -8, 18, 26, 0xff6f00).setStrokeStyle(2, 0xffab00);
 
-        // 공격 범위 표시
-        const rangeCircle = this.add.circle(cone.x, cone.y, attackRange, 0xff6f00, 0.08).setDepth(6);
+        // 포신 (별도 컨테이너로 회전)
+        const barrel = this.add.rectangle(0, -28, 8, 20, 0xffcc80).setStrokeStyle(1, 0xff8f00);
+        const muzzle = this.add.circle(0, -38, 5, 0xff5722);
 
-        let elapsed = 0;
-        let lastAttack = 0;
+        // 에너지 코어 (펄스 애니메이션)
+        const core = this.add.circle(0, -5, 5, 0x00e5ff);
+        const coreGlow = this.add.circle(0, -5, 8, 0x00e5ff, 0.3);
 
-        const attackInterval = this.time.addEvent({
-            delay: 50,
-            repeat: -1,
-            callback: () => {
-                elapsed += 50;
+        // 아이콘 표시
+        const icon = this.add.text(0, -55, '🔶', { fontSize: '16px' }).setOrigin(0.5);
 
-                // 플레이어 따라다니기
-                cone.x = this.player.x + offsetX;
-                cone.y = this.player.y + offsetY;
-                rangeCircle.x = cone.x;
-                rangeCircle.y = cone.y;
+        turretContainer.add([shadow, base1, base2, baseHighlight, turretBody, barrel, muzzle, core, coreGlow, icon]);
 
-                // 미사일 발사
-                if (elapsed - lastAttack >= attackCooldown) {
-                    // 가장 가까운 적 찾기
-                    let target = null;
-                    let closestDist = attackRange;
-                    this.enemies.children.each(e => {
-                        if (!e.active) return;
-                        const dx = e.x - cone.x, dy = e.y - cone.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < closestDist) {
-                            closestDist = dist;
-                            target = e;
-                        }
-                    });
-
-                    if (target) {
-                        lastAttack = elapsed;
-                        // 미사일 발사!
-                        const missileAngle = Math.atan2(target.y - cone.y, target.x - cone.x);
-                        const missile = this.add.circle(cone.x, cone.y - 10, 5, 0xff5722, 1).setDepth(11);
-
-                        this.tweens.add({
-                            targets: missile,
-                            x: target.x,
-                            y: target.y,
-                            duration: 200,
-                            ease: 'Quad.easeIn',
-                            onComplete: () => {
-                                // 폭발 이펙트
-                                const boom = this.add.circle(missile.x, missile.y, 20, 0xff5722, 0.7).setDepth(10);
-                                this.tweens.add({ targets: boom, scale: 1.5, alpha: 0, duration: 150, onComplete: () => boom.destroy() });
-
-                                // 범위 데미지
-                                this.enemies.children.each(e => {
-                                    if (!e.active) return;
-                                    const dx = e.x - missile.x, dy = e.y - missile.y;
-                                    if (Math.sqrt(dx*dx + dy*dy) <= 30) {
-                                        this.damageEnemy(e, dmg);
-                                    }
-                                });
-                                missile.destroy();
-                            }
-                        });
-                    }
-                }
-
-                // 지속시간 끝 - 사라짐
-                if (elapsed >= duration) {
-                    attackInterval.remove();
-                    this.tweens.add({
-                        targets: [cone, rangeCircle],
-                        alpha: 0,
-                        scale: 0.5,
-                        duration: 300,
-                        onComplete: () => { cone.destroy(); rangeCircle.destroy(); }
-                    });
-                }
-            }
+        // 코어 펄스 애니메이션
+        this.tweens.add({
+            targets: coreGlow,
+            scale: { from: 1, to: 1.5 },
+            alpha: { from: 0.3, to: 0 },
+            duration: 800,
+            repeat: -1
         });
-    }
 
-    // ★ 청소차 - 포토캐논 스타일: 캐릭터 옆에서 미사일 발사하다가 사라짐
-    fireTruck(lv, dmgBonus) {
-        const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.25) * dmgBonus;
-        const duration = 6000 + lv * 600;  // 기본 6초, 레벨당 0.6초 증가
-        const attackCooldown = Math.max(250, 450 - lv * 20);  // 레벨당 발사 속도 증가
-        const attackRange = 180 + lv * 15;  // 사거리
+        // ★ 남은시간 바
+        const timerBarBg = this.add.rectangle(summonX, summonY + 25, 40, 5, 0x333333).setDepth(12);
+        const timerBar = this.add.rectangle(summonX - 19, summonY + 25, 38, 3, 0xff6f00).setOrigin(0, 0.5).setDepth(12);
 
-        // 플레이어 주변 위치
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 70 + Math.random() * 30;
-        const offsetX = Math.cos(angle) * dist;
-        const offsetY = Math.sin(angle) * dist;
-
-        // ★ 미니탱크 그래픽 (SF 스타일 탱크)
-        const truck = this.add.graphics().setDepth(12);
-        // 궤도 (좌우)
-        truck.fillStyle(0x37474f, 1);
-        truck.fillRoundedRect(-28, -8, 12, 24, 4);
-        truck.fillRoundedRect(16, -8, 12, 24, 4);
-        // 차체
-        truck.fillStyle(0x4caf50, 1);
-        truck.fillRoundedRect(-18, -12, 36, 24, 3);
-        truck.fillStyle(0x388e3c, 1);
-        truck.fillRect(-14, -8, 28, 16);
-        // 포탑 베이스
-        truck.fillStyle(0x2e7d32, 1);
-        truck.fillCircle(0, -2, 14);
-        // 포신
-        truck.fillStyle(0x1b5e20, 1);
-        truck.fillRect(-4, -25, 8, 20);
-        truck.fillStyle(0xff6f00, 1);
-        truck.fillCircle(0, -25, 5);
-        // 디테일
-        truck.fillStyle(0xffeb3b, 0.8);
-        truck.fillCircle(0, -2, 5);
-        // 바퀴
-        truck.fillStyle(0x212121, 1);
-        truck.fillCircle(-22, 0, 5);
-        truck.fillCircle(-22, 10, 5);
-        truck.fillCircle(22, 0, 5);
-        truck.fillCircle(22, 10, 5);
-        truck.x = this.player.x + offsetX;
-        truck.y = this.player.y + offsetY;
-
-        // 공격 범위 표시
-        const rangeCircle = this.add.circle(truck.x, truck.y, attackRange, 0xff6f00, 0.08).setDepth(6);
+        // ★ 공격 범위 (점선 스타일)
+        const rangeCircle = this.add.circle(summonX, summonY, attackRange, 0xff6f00, 0.05).setDepth(6);
+        rangeCircle.setStrokeStyle(1, 0xff6f00, 0.2);
 
         let elapsed = 0;
         let lastAttack = 0;
-        let turretAngle = 0;
+        let currentAngle = 0;
 
         const attackInterval = this.time.addEvent({
             delay: 50,
@@ -4354,17 +4252,24 @@ class GameScene extends Phaser.Scene {
                 elapsed += 50;
 
                 // 플레이어 따라다니기
-                truck.x = this.player.x + offsetX;
-                truck.y = this.player.y + offsetY;
-                rangeCircle.x = truck.x;
-                rangeCircle.y = truck.y;
+                turretContainer.x = this.player.x + offsetX;
+                turretContainer.y = this.player.y + offsetY;
+                rangeCircle.x = turretContainer.x;
+                rangeCircle.y = turretContainer.y;
+                timerBarBg.x = turretContainer.x;
+                timerBarBg.y = turretContainer.y + 25;
+                timerBar.x = turretContainer.x - 19;
+                timerBar.y = turretContainer.y + 25;
 
-                // 가장 가까운 적 찾기
+                // 남은시간 바 업데이트
+                timerBar.width = 38 * (1 - elapsed / duration);
+
+                // 가장 가까운 적 찾아서 포신 회전
                 let target = null;
                 let closestDist = attackRange;
                 this.enemies.children.each(e => {
                     if (!e.active) return;
-                    const dx = e.x - truck.x, dy = e.y - truck.y;
+                    const dx = e.x - turretContainer.x, dy = e.y - turretContainer.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < closestDist) {
                         closestDist = dist;
@@ -4372,22 +4277,43 @@ class GameScene extends Phaser.Scene {
                     }
                 });
 
+                // 포신 회전 (적 방향으로)
+                if (target) {
+                    const targetAngle = Math.atan2(target.y - turretContainer.y, target.x - turretContainer.x) + Math.PI/2;
+                    currentAngle += (targetAngle - currentAngle) * 0.15;  // 부드러운 회전
+                    barrel.setRotation(currentAngle);
+                    muzzle.setPosition(Math.sin(currentAngle) * 20, -28 - Math.cos(currentAngle) * 20);
+                }
+
                 // 미사일 발사
                 if (target && elapsed - lastAttack >= attackCooldown) {
                     lastAttack = elapsed;
 
-                    // 큰 미사일 발사!
-                    const missileAngle = Math.atan2(target.y - truck.y, target.x - truck.x);
-                    const missile = this.add.graphics().setDepth(11);
-                    missile.fillStyle(0xffab00, 1);
-                    missile.fillRect(-6, -3, 12, 6);
-                    missile.fillStyle(0xff5722, 1);
-                    missile.fillTriangle(6, 0, -2, -4, -2, 4);
-                    missile.x = truck.x;
-                    missile.y = truck.y - 5;
-                    missile.rotation = missileAngle;
+                    // ★ 머즐 플래시
+                    const flash = this.add.circle(muzzle.x + turretContainer.x, muzzle.y + turretContainer.y, 12, 0xffeb3b, 0.9).setDepth(13);
+                    this.tweens.add({ targets: flash, scale: 0.3, alpha: 0, duration: 80, onComplete: () => flash.destroy() });
+
+                    // ★ 미사일 (트레일 포함)
+                    const missileX = turretContainer.x + muzzle.x;
+                    const missileY = turretContainer.y + muzzle.y;
+                    const missile = this.add.container(missileX, missileY).setDepth(11);
+                    const missileBody = this.add.ellipse(0, 0, 10, 6, 0xff5722);
+                    const missileGlow = this.add.ellipse(0, 0, 14, 8, 0xffab00, 0.5);
+                    missile.add([missileGlow, missileBody]);
+                    missile.rotation = Math.atan2(target.y - missileY, target.x - missileX);
 
                     const targetX = target.x, targetY = target.y;
+
+                    // 미사일 트레일
+                    const trailTimer = this.time.addEvent({
+                        delay: 30,
+                        repeat: 6,
+                        callback: () => {
+                            const trail = this.add.circle(missile.x, missile.y, 4, 0xff8f00, 0.6).setDepth(10);
+                            this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 150, onComplete: () => trail.destroy() });
+                        }
+                    });
+
                     this.tweens.add({
                         targets: missile,
                         x: targetX,
@@ -4395,20 +4321,23 @@ class GameScene extends Phaser.Scene {
                         duration: 180,
                         ease: 'Quad.easeIn',
                         onComplete: () => {
-                            // 폭발 이펙트
-                            const boom = this.add.circle(missile.x, missile.y, 25, 0xff6f00, 0.8).setDepth(10);
-                            this.tweens.add({ targets: boom, scale: 1.8, alpha: 0, duration: 200, onComplete: () => boom.destroy() });
+                            trailTimer.remove();
+                            // ★ 폭발 이펙트 (다중 레이어)
+                            const boomX = missile.x, boomY = missile.y;
+                            const ring = this.add.circle(boomX, boomY, 10, 0xffffff, 0).setStrokeStyle(3, 0xffeb3b).setDepth(10);
+                            const boom1 = this.add.circle(boomX, boomY, 15, 0xff5722, 0.8).setDepth(10);
+                            const boom2 = this.add.circle(boomX, boomY, 25, 0xff8f00, 0.4).setDepth(9);
+
+                            this.tweens.add({ targets: ring, scale: 3, alpha: 0, duration: 200, onComplete: () => ring.destroy() });
+                            this.tweens.add({ targets: boom1, scale: 2, alpha: 0, duration: 150, onComplete: () => boom1.destroy() });
+                            this.tweens.add({ targets: boom2, scale: 2.5, alpha: 0, duration: 200, onComplete: () => boom2.destroy() });
 
                             // 범위 데미지
                             this.enemies.children.each(e => {
                                 if (!e.active) return;
-                                const dx = e.x - missile.x, dy = e.y - missile.y;
-                                if (Math.sqrt(dx*dx + dy*dy) <= 40) {
+                                const dx = e.x - boomX, dy = e.y - boomY;
+                                if (Math.sqrt(dx*dx + dy*dy) <= 35) {
                                     this.damageEnemy(e, dmg);
-                                    // 넉백
-                                    const knockAngle = Math.atan2(e.y - missile.y, e.x - missile.x);
-                                    e.x += Math.cos(knockAngle) * 15;
-                                    e.y += Math.sin(knockAngle) * 15;
                                 }
                             });
                             missile.destroy();
@@ -4416,69 +4345,88 @@ class GameScene extends Phaser.Scene {
                     });
                 }
 
-                // 지속시간 끝 - 사라짐
+                // 지속시간 끝 - 퇴장 이펙트
                 if (elapsed >= duration) {
                     attackInterval.remove();
+                    // 퇴장 파티클
+                    for (let i = 0; i < 8; i++) {
+                        const p = this.add.circle(turretContainer.x, turretContainer.y, 4, 0xff6f00, 0.8).setDepth(13);
+                        const pAngle = (i / 8) * Math.PI * 2;
+                        this.tweens.add({
+                            targets: p,
+                            x: turretContainer.x + Math.cos(pAngle) * 30,
+                            y: turretContainer.y + Math.sin(pAngle) * 30 - 20,
+                            alpha: 0,
+                            duration: 400,
+                            onComplete: () => p.destroy()
+                        });
+                    }
                     this.tweens.add({
-                        targets: [truck, rangeCircle],
+                        targets: [turretContainer, rangeCircle, timerBarBg, timerBar],
                         alpha: 0,
-                        scale: 0.5,
+                        y: '-=20',
                         duration: 300,
-                        onComplete: () => { truck.destroy(); rangeCircle.destroy(); }
+                        onComplete: () => { turretContainer.destroy(); rangeCircle.destroy(); timerBarBg.destroy(); timerBar.destroy(); }
                     });
                 }
             }
         });
     }
 
-    // ★ 환경드론 - 포토캐논 스타일: 캐릭터 옆에서 미사일 발사하다가 사라짐
-    fireDrone(lv, dmgBonus) {
-        const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.2) * dmgBonus;
-        const duration = 5000 + lv * 500;  // 기본 5초, 레벨당 0.5초 증가
-        const attackCooldown = Math.max(200, 350 - lv * 15);  // 레벨당 발사 속도 증가
-        const attackRange = 160 + lv * 15;  // 사거리
+    // ★★★ 미니탱크 - 하이브리드 스타일 ★★★
+    fireTruck(lv, dmgBonus) {
+        const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.25) * dmgBonus;
+        const duration = 6000 + lv * 600;
+        const attackCooldown = Math.max(250, 450 - lv * 20);
+        const attackRange = 180 + lv * 15;
 
-        // 플레이어 주변 위치 (위쪽)
-        const hoverOffset = { x: Phaser.Math.Between(-40, 40), y: -55 };
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 70 + Math.random() * 30;
+        const offsetX = Math.cos(angle) * dist;
+        const offsetY = Math.sin(angle) * dist;
 
-        // ★ SF 공격드론 그래픽
-        const drone = this.add.graphics().setDepth(12);
-        // 본체 (육각형 스타일)
-        drone.fillStyle(0x263238, 1);
-        drone.fillRect(-16, -8, 32, 16);
-        drone.fillStyle(0x37474f, 1);
-        drone.fillRect(-12, -6, 24, 12);
-        // 중앙 코어 (발광)
-        drone.fillStyle(0x00e5ff, 1);
-        drone.fillCircle(0, 0, 6);
-        drone.fillStyle(0x00bcd4, 0.5);
-        drone.fillCircle(0, 0, 9);
-        // 날개 (좌우)
-        drone.fillStyle(0x455a64, 1);
-        drone.fillTriangle(-25, 0, -12, -8, -12, 8);
-        drone.fillTriangle(25, 0, 12, -8, 12, 8);
-        // 프로펠러 (4개)
-        drone.fillStyle(0x78909c, 1);
-        drone.fillCircle(-20, -10, 6);
-        drone.fillCircle(20, -10, 6);
-        drone.fillCircle(-20, 10, 6);
-        drone.fillCircle(20, 10, 6);
-        // 미사일 포드 (아래)
-        drone.fillStyle(0xf44336, 1);
-        drone.fillRect(-10, 8, 6, 10);
-        drone.fillRect(4, 8, 6, 10);
-        drone.fillStyle(0xffeb3b, 1);
-        drone.fillCircle(-7, 18, 3);
-        drone.fillCircle(7, 18, 3);
-        drone.x = this.player.x + hoverOffset.x;
-        drone.y = this.player.y + hoverOffset.y;
+        const summonX = this.player.x + offsetX;
+        const summonY = this.player.y + offsetY;
+        this.createSummonEffect(summonX, summonY, 0x4caf50);
 
-        // 공격 범위 표시
-        const rangeCircle = this.add.circle(drone.x, drone.y, attackRange, 0x1565c0, 0.08).setDepth(6);
+        // ★ 컨테이너로 탱크 구성
+        const tankContainer = this.add.container(summonX, summonY).setDepth(12);
+
+        // 그림자
+        const shadow = this.add.ellipse(0, 15, 50, 14, 0x000000, 0.3);
+
+        // 궤도 (좌우)
+        const trackL = this.add.rectangle(-22, 4, 14, 28, 0x37474f).setStrokeStyle(1, 0x263238);
+        const trackR = this.add.rectangle(22, 4, 14, 28, 0x37474f).setStrokeStyle(1, 0x263238);
+
+        // 차체
+        const body = this.add.rectangle(0, 0, 36, 28, 0x4caf50).setStrokeStyle(2, 0x81c784);
+        const bodyTop = this.add.rectangle(0, -2, 28, 20, 0x66bb6a);
+
+        // 포탑 베이스 (회전)
+        const turretBase = this.add.circle(0, -4, 14, 0x388e3c).setStrokeStyle(2, 0x4caf50);
+
+        // 포신 (별도 - 회전)
+        const barrel = this.add.rectangle(0, -22, 8, 22, 0x2e7d32).setStrokeStyle(1, 0x1b5e20);
+        const muzzle = this.add.circle(0, -33, 6, 0x1b5e20);
+        const muzzleGlow = this.add.circle(0, -33, 4, 0x76ff03);
+
+        // 아이콘
+        const icon = this.add.text(0, -50, '🚛', { fontSize: '16px' }).setOrigin(0.5);
+
+        tankContainer.add([shadow, trackL, trackR, body, bodyTop, turretBase, barrel, muzzle, muzzleGlow, icon]);
+
+        // 남은시간 바
+        const timerBarBg = this.add.rectangle(summonX, summonY + 28, 44, 5, 0x333333).setDepth(12);
+        const timerBar = this.add.rectangle(summonX - 21, summonY + 28, 42, 3, 0x4caf50).setOrigin(0, 0.5).setDepth(12);
+
+        // 공격 범위
+        const rangeCircle = this.add.circle(summonX, summonY, attackRange, 0x4caf50, 0.05).setDepth(6);
+        rangeCircle.setStrokeStyle(1, 0x4caf50, 0.2);
 
         let elapsed = 0;
         let lastAttack = 0;
-        let missileToggle = false;  // 좌우 번갈아 발사
+        let currentAngle = 0;
 
         const attackInterval = this.time.addEvent({
             delay: 50,
@@ -4486,22 +4434,241 @@ class GameScene extends Phaser.Scene {
             callback: () => {
                 elapsed += 50;
 
-                // 플레이어 따라다니며 약간 흔들림
-                const wobbleX = Math.sin(elapsed * 0.003) * 4;
-                const wobbleY = Math.cos(elapsed * 0.004) * 2;
-                drone.x = this.player.x + hoverOffset.x + wobbleX;
-                drone.y = this.player.y + hoverOffset.y + wobbleY;
-                rangeCircle.x = drone.x;
-                rangeCircle.y = drone.y;
+                tankContainer.x = this.player.x + offsetX;
+                tankContainer.y = this.player.y + offsetY;
+                rangeCircle.x = tankContainer.x;
+                rangeCircle.y = tankContainer.y;
+                timerBarBg.x = tankContainer.x;
+                timerBarBg.y = tankContainer.y + 28;
+                timerBar.x = tankContainer.x - 21;
+                timerBar.y = tankContainer.y + 28;
+                timerBar.width = 42 * (1 - elapsed / duration);
 
-                // 미사일 발사
+                let target = null;
+                let closestDist = attackRange;
+                this.enemies.children.each(e => {
+                    if (!e.active) return;
+                    const dx = e.x - tankContainer.x, dy = e.y - tankContainer.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        target = e;
+                    }
+                });
+
+                // 포탑 회전
+                if (target) {
+                    const targetAngle = Math.atan2(target.y - tankContainer.y, target.x - tankContainer.x) + Math.PI/2;
+                    currentAngle += (targetAngle - currentAngle) * 0.12;
+                    turretBase.setRotation(currentAngle);
+                    barrel.setRotation(currentAngle);
+                    muzzle.setPosition(Math.sin(currentAngle) * 22, -22 - Math.cos(currentAngle) * 22);
+                    muzzleGlow.setPosition(muzzle.x, muzzle.y);
+                }
+
+                if (target && elapsed - lastAttack >= attackCooldown) {
+                    lastAttack = elapsed;
+
+                    // 머즐 플래시 + 반동
+                    const flashX = tankContainer.x + muzzle.x;
+                    const flashY = tankContainer.y + muzzle.y;
+                    const flash = this.add.circle(flashX, flashY, 18, 0xffeb3b, 0.9).setDepth(13);
+                    const smoke = this.add.circle(flashX, flashY, 12, 0x9e9e9e, 0.6).setDepth(12);
+                    this.tweens.add({ targets: flash, scale: 0.2, alpha: 0, duration: 100, onComplete: () => flash.destroy() });
+                    this.tweens.add({ targets: smoke, y: flashY - 20, scale: 2, alpha: 0, duration: 300, onComplete: () => smoke.destroy() });
+
+                    // 포탄
+                    const shell = this.add.container(flashX, flashY).setDepth(11);
+                    const shellBody = this.add.capsule(0, 0, 16, 8, 0xffcc00);
+                    const shellGlow = this.add.capsule(0, 0, 20, 10, 0xff8f00, 0.4);
+                    shell.add([shellGlow, shellBody]);
+                    shell.rotation = currentAngle - Math.PI/2;
+
+                    const targetX = target.x, targetY = target.y;
+
+                    // 포탄 트레일
+                    const trailTimer = this.time.addEvent({
+                        delay: 25,
+                        repeat: 7,
+                        callback: () => {
+                            const trail = this.add.circle(shell.x, shell.y, 5, 0xff9800, 0.5).setDepth(10);
+                            this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 120, onComplete: () => trail.destroy() });
+                        }
+                    });
+
+                    this.tweens.add({
+                        targets: shell,
+                        x: targetX,
+                        y: targetY,
+                        duration: 160,
+                        ease: 'Quad.easeIn',
+                        onComplete: () => {
+                            trailTimer.remove();
+                            const boomX = shell.x, boomY = shell.y;
+
+                            // 대형 폭발
+                            const ring = this.add.circle(boomX, boomY, 15, 0xffffff, 0).setStrokeStyle(4, 0xffeb3b).setDepth(10);
+                            const boom1 = this.add.circle(boomX, boomY, 20, 0xff5722, 0.9).setDepth(10);
+                            const boom2 = this.add.circle(boomX, boomY, 35, 0xff8f00, 0.5).setDepth(9);
+                            const boom3 = this.add.circle(boomX, boomY, 50, 0xffcc80, 0.2).setDepth(8);
+
+                            this.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 250, onComplete: () => ring.destroy() });
+                            this.tweens.add({ targets: boom1, scale: 2.5, alpha: 0, duration: 180, onComplete: () => boom1.destroy() });
+                            this.tweens.add({ targets: boom2, scale: 2, alpha: 0, duration: 220, onComplete: () => boom2.destroy() });
+                            this.tweens.add({ targets: boom3, scale: 1.8, alpha: 0, duration: 280, onComplete: () => boom3.destroy() });
+
+                            this.cameras.main.shake(80, 0.008);
+
+                            this.enemies.children.each(e => {
+                                if (!e.active) return;
+                                const dx = e.x - boomX, dy = e.y - boomY;
+                                if (Math.sqrt(dx*dx + dy*dy) <= 45) {
+                                    this.damageEnemy(e, dmg);
+                                    const knockAngle = Math.atan2(e.y - boomY, e.x - boomX);
+                                    e.x += Math.cos(knockAngle) * 20;
+                                    e.y += Math.sin(knockAngle) * 20;
+                                }
+                            });
+                            shell.destroy();
+                        }
+                    });
+                }
+
+                if (elapsed >= duration) {
+                    attackInterval.remove();
+                    for (let i = 0; i < 10; i++) {
+                        const p = this.add.circle(tankContainer.x, tankContainer.y, 5, 0x4caf50, 0.8).setDepth(13);
+                        const pAngle = (i / 10) * Math.PI * 2;
+                        this.tweens.add({
+                            targets: p,
+                            x: tankContainer.x + Math.cos(pAngle) * 35,
+                            y: tankContainer.y + Math.sin(pAngle) * 35 - 15,
+                            alpha: 0,
+                            duration: 450,
+                            onComplete: () => p.destroy()
+                        });
+                    }
+                    this.tweens.add({
+                        targets: [tankContainer, rangeCircle, timerBarBg, timerBar],
+                        alpha: 0,
+                        y: '-=25',
+                        duration: 350,
+                        onComplete: () => { tankContainer.destroy(); rangeCircle.destroy(); timerBarBg.destroy(); timerBar.destroy(); }
+                    });
+                }
+            }
+        });
+    }
+
+    // ★★★ 공격드론 - 하이브리드 스타일 ★★★
+    fireDrone(lv, dmgBonus) {
+        const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const duration = 5000 + lv * 500;
+        const attackCooldown = Math.max(200, 350 - lv * 15);
+        const attackRange = 160 + lv * 15;
+
+        const hoverOffset = { x: Phaser.Math.Between(-40, 40), y: -60 };
+        const summonX = this.player.x + hoverOffset.x;
+        const summonY = this.player.y + hoverOffset.y;
+        this.createSummonEffect(summonX, summonY, 0x00bcd4);
+
+        // ★ 드론 컨테이너
+        const droneContainer = this.add.container(summonX, summonY).setDepth(12);
+
+        // 그림자
+        const shadow = this.add.ellipse(0, 50, 30, 10, 0x000000, 0.2);
+
+        // 본체
+        const body = this.add.rectangle(0, 0, 28, 14, 0x37474f).setStrokeStyle(2, 0x546e7a);
+        const bodyInner = this.add.rectangle(0, 0, 20, 10, 0x455a64);
+
+        // 코어 (발광 펄스)
+        const coreGlow = this.add.circle(0, 0, 10, 0x00e5ff, 0.3);
+        const core = this.add.circle(0, 0, 6, 0x00e5ff);
+
+        // 날개
+        const wingL = this.add.triangle(-22, 0, 0, 0, 12, -8, 12, 8, 0x546e7a).setStrokeStyle(1, 0x78909c);
+        const wingR = this.add.triangle(22, 0, 0, 0, -12, -8, -12, 8, 0x546e7a).setStrokeStyle(1, 0x78909c);
+
+        // 프로펠러 (회전 애니메이션용)
+        const propBL = this.add.ellipse(-18, 10, 14, 4, 0x90a4ae, 0.7);
+        const propBR = this.add.ellipse(18, 10, 14, 4, 0x90a4ae, 0.7);
+        const propFL = this.add.ellipse(-18, -10, 14, 4, 0x90a4ae, 0.7);
+        const propFR = this.add.ellipse(18, -10, 14, 4, 0x90a4ae, 0.7);
+
+        // 미사일 포드
+        const podL = this.add.rectangle(-8, 12, 6, 10, 0xf44336).setStrokeStyle(1, 0xd32f2f);
+        const podR = this.add.rectangle(8, 12, 6, 10, 0xf44336).setStrokeStyle(1, 0xd32f2f);
+        const podGlowL = this.add.circle(-8, 17, 3, 0xffeb3b, 0.8);
+        const podGlowR = this.add.circle(8, 17, 3, 0xffeb3b, 0.8);
+
+        // 아이콘
+        const icon = this.add.text(0, -25, '🚁', { fontSize: '14px' }).setOrigin(0.5);
+
+        droneContainer.add([shadow, wingL, wingR, body, bodyInner, propBL, propBR, propFL, propFR, podL, podR, podGlowL, podGlowR, coreGlow, core, icon]);
+
+        // 코어 펄스
+        this.tweens.add({
+            targets: coreGlow,
+            scale: { from: 1, to: 1.8 },
+            alpha: { from: 0.3, to: 0 },
+            duration: 600,
+            repeat: -1
+        });
+
+        // 프로펠러 회전
+        this.tweens.add({
+            targets: [propBL, propBR, propFL, propFR],
+            scaleX: { from: 1, to: 0.2 },
+            duration: 50,
+            yoyo: true,
+            repeat: -1
+        });
+
+        // 남은시간 바
+        const timerBarBg = this.add.rectangle(summonX, summonY + 30, 36, 4, 0x333333).setDepth(12);
+        const timerBar = this.add.rectangle(summonX - 17, summonY + 30, 34, 2, 0x00bcd4).setOrigin(0, 0.5).setDepth(12);
+
+        // 공격 범위
+        const rangeCircle = this.add.circle(summonX, summonY, attackRange, 0x00bcd4, 0.04).setDepth(6);
+        rangeCircle.setStrokeStyle(1, 0x00bcd4, 0.15);
+
+        let elapsed = 0;
+        let lastAttack = 0;
+        let missileToggle = false;
+
+        const attackInterval = this.time.addEvent({
+            delay: 50,
+            repeat: -1,
+            callback: () => {
+                elapsed += 50;
+
+                // 호버링 모션
+                const wobbleX = Math.sin(elapsed * 0.003) * 5;
+                const wobbleY = Math.cos(elapsed * 0.005) * 3;
+                const tilt = Math.sin(elapsed * 0.002) * 0.1;
+
+                droneContainer.x = this.player.x + hoverOffset.x + wobbleX;
+                droneContainer.y = this.player.y + hoverOffset.y + wobbleY;
+                droneContainer.rotation = tilt;
+
+                rangeCircle.x = droneContainer.x;
+                rangeCircle.y = droneContainer.y;
+                timerBarBg.x = droneContainer.x;
+                timerBarBg.y = droneContainer.y + 30;
+                timerBar.x = droneContainer.x - 17;
+                timerBar.y = droneContainer.y + 30;
+                timerBar.width = 34 * (1 - elapsed / duration);
+
+                // 그림자 위치
+                shadow.y = 50 + wobbleY * 2;
+
                 if (elapsed - lastAttack >= attackCooldown) {
-                    // 가장 가까운 적 찾기
                     let target = null;
                     let closestDist = attackRange;
                     this.enemies.children.each(e => {
                         if (!e.active) return;
-                        const dx = e.x - drone.x, dy = e.y - drone.y;
+                        const dx = e.x - droneContainer.x, dy = e.y - droneContainer.y;
                         const dist = Math.sqrt(dx*dx + dy*dy);
                         if (dist < closestDist) {
                             closestDist = dist;
@@ -4513,39 +4680,55 @@ class GameScene extends Phaser.Scene {
                         lastAttack = elapsed;
                         missileToggle = !missileToggle;
 
-                        // 미사일 발사 위치 (좌/우 번갈아)
-                        const launchX = drone.x + (missileToggle ? -5 : 5);
-                        const launchY = drone.y + 10;
+                        const launchX = droneContainer.x + (missileToggle ? -8 : 8);
+                        const launchY = droneContainer.y + 17;
 
-                        // 작은 유도 미사일
-                        const missile = this.add.graphics().setDepth(11);
-                        missile.fillStyle(0x00e5ff, 1);
-                        missile.fillRect(-4, -2, 8, 4);
-                        missile.fillStyle(0x00bcd4, 1);
-                        missile.fillTriangle(4, 0, -2, -3, -2, 3);
-                        missile.x = launchX;
-                        missile.y = launchY;
+                        // 발사 플래시
+                        const flash = this.add.circle(launchX, launchY, 8, 0xffeb3b, 0.9).setDepth(13);
+                        this.tweens.add({ targets: flash, scale: 0.3, alpha: 0, duration: 60, onComplete: () => flash.destroy() });
+
+                        // 유도 미사일
+                        const missile = this.add.container(launchX, launchY).setDepth(11);
+                        const missileBody = this.add.capsule(0, 0, 12, 5, 0x00e5ff);
+                        const missileGlow = this.add.capsule(0, 0, 16, 7, 0x00bcd4, 0.5);
+                        missile.add([missileGlow, missileBody]);
 
                         const targetX = target.x, targetY = target.y;
-                        const missileAngle = Math.atan2(targetY - launchY, targetX - launchX);
-                        missile.rotation = missileAngle;
+                        missile.rotation = Math.atan2(targetY - launchY, targetX - launchX);
+
+                        // 미사일 트레일
+                        const trailTimer = this.time.addEvent({
+                            delay: 20,
+                            repeat: 7,
+                            callback: () => {
+                                const trail = this.add.circle(missile.x, missile.y, 3, 0x00e5ff, 0.6).setDepth(10);
+                                this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 100, onComplete: () => trail.destroy() });
+                            }
+                        });
 
                         this.tweens.add({
                             targets: missile,
                             x: targetX,
                             y: targetY,
-                            duration: 150,
+                            duration: 140,
                             ease: 'Quad.easeIn',
                             onComplete: () => {
-                                // 폭발 이펙트
-                                const boom = this.add.circle(missile.x, missile.y, 18, 0x00e5ff, 0.7).setDepth(10);
-                                this.tweens.add({ targets: boom, scale: 1.5, alpha: 0, duration: 120, onComplete: () => boom.destroy() });
+                                trailTimer.remove();
+                                const boomX = missile.x, boomY = missile.y;
 
-                                // 데미지
+                                // 폭발 이펙트
+                                const ring = this.add.circle(boomX, boomY, 8, 0xffffff, 0).setStrokeStyle(2, 0x00e5ff).setDepth(10);
+                                const boom1 = this.add.circle(boomX, boomY, 12, 0x00e5ff, 0.8).setDepth(10);
+                                const boom2 = this.add.circle(boomX, boomY, 20, 0x00bcd4, 0.4).setDepth(9);
+
+                                this.tweens.add({ targets: ring, scale: 2.5, alpha: 0, duration: 150, onComplete: () => ring.destroy() });
+                                this.tweens.add({ targets: boom1, scale: 2, alpha: 0, duration: 120, onComplete: () => boom1.destroy() });
+                                this.tweens.add({ targets: boom2, scale: 2, alpha: 0, duration: 160, onComplete: () => boom2.destroy() });
+
                                 this.enemies.children.each(e => {
                                     if (!e.active) return;
-                                    const dx = e.x - missile.x, dy = e.y - missile.y;
-                                    if (Math.sqrt(dx*dx + dy*dy) <= 25) {
+                                    const dx = e.x - boomX, dy = e.y - boomY;
+                                    if (Math.sqrt(dx*dx + dy*dy) <= 28) {
                                         this.damageEnemy(e, dmg);
                                     }
                                 });
@@ -4555,15 +4738,26 @@ class GameScene extends Phaser.Scene {
                     }
                 }
 
-                // 지속시간 끝 - 사라짐
                 if (elapsed >= duration) {
                     attackInterval.remove();
+                    for (let i = 0; i < 6; i++) {
+                        const p = this.add.circle(droneContainer.x, droneContainer.y, 4, 0x00bcd4, 0.8).setDepth(13);
+                        const pAngle = (i / 6) * Math.PI * 2;
+                        this.tweens.add({
+                            targets: p,
+                            x: droneContainer.x + Math.cos(pAngle) * 25,
+                            y: droneContainer.y + Math.sin(pAngle) * 25 - 30,
+                            alpha: 0,
+                            duration: 400,
+                            onComplete: () => p.destroy()
+                        });
+                    }
                     this.tweens.add({
-                        targets: [drone, rangeCircle],
+                        targets: [droneContainer, rangeCircle, timerBarBg, timerBar],
                         alpha: 0,
-                        y: drone.y - 60,
+                        y: '-=40',
                         duration: 400,
-                        onComplete: () => { drone.destroy(); rangeCircle.destroy(); }
+                        onComplete: () => { droneContainer.destroy(); rangeCircle.destroy(); timerBarBg.destroy(); timerBar.destroy(); }
                     });
                 }
             }
@@ -4664,6 +4858,57 @@ class GameScene extends Phaser.Scene {
             if (d < minDist) { minDist = d; closest = e; }
         });
         return closest;
+    }
+
+    // ★★★ 소환 이펙트 함수 ★★★
+    createSummonEffect(x, y, color) {
+        // 소환진 원
+        const ring1 = this.add.circle(x, y, 5, color, 0).setStrokeStyle(3, color, 0.9).setDepth(11);
+        const ring2 = this.add.circle(x, y, 5, color, 0).setStrokeStyle(2, 0xffffff, 0.7).setDepth(11);
+
+        // 중앙 플래시
+        const flash = this.add.circle(x, y, 15, 0xffffff, 0.9).setDepth(12);
+
+        // 파티클
+        for (let i = 0; i < 8; i++) {
+            const pAngle = (i / 8) * Math.PI * 2;
+            const p = this.add.circle(x, y, 4, color, 0.9).setDepth(11);
+            this.tweens.add({
+                targets: p,
+                x: x + Math.cos(pAngle) * 40,
+                y: y + Math.sin(pAngle) * 40,
+                alpha: 0,
+                scale: 0,
+                duration: 400,
+                ease: 'Quad.easeOut',
+                onComplete: () => p.destroy()
+            });
+        }
+
+        // 애니메이션
+        this.tweens.add({
+            targets: ring1,
+            scale: 4,
+            alpha: 0,
+            duration: 500,
+            ease: 'Quad.easeOut',
+            onComplete: () => ring1.destroy()
+        });
+        this.tweens.add({
+            targets: ring2,
+            scale: 3,
+            alpha: 0,
+            duration: 400,
+            ease: 'Quad.easeOut',
+            onComplete: () => ring2.destroy()
+        });
+        this.tweens.add({
+            targets: flash,
+            scale: 0,
+            alpha: 0,
+            duration: 200,
+            onComplete: () => flash.destroy()
+        });
     }
 
     updateSpawning(time) {
