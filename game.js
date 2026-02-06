@@ -4457,21 +4457,21 @@ class GameScene extends Phaser.Scene {
 
     activateBomb() {
         const px = this.player.x, py = this.player.y;
-        const bombRange = 150;  // ★ 너프: 200 → 150px로 더 축소
-        const bombDamage = 25;  // ★ 너프: 50 → 25로 데미지 감소
+        const bombRange = 80;   // ★ 대폭 너프: 150 → 80px (아주 좁은 범위)
+        const bombDamage = 15;  // ★ 대폭 너프: 25 → 15
+        const maxKills = 5;     // ★ 최대 5마리만 처치 가능
 
-        // 화면 플래시
-        this.cameras.main.flash(200, 255, 100, 0);
-        this.cameras.main.shake(150, 0.02);
+        // 화면 플래시 (약하게)
+        this.cameras.main.flash(100, 255, 100, 0);
 
-        // 폭발 범위 시각화
+        // 폭발 범위 시각화 (작게)
         const explosionCircle = this.add.circle(px, py, bombRange, 0xff5722, 0.4).setDepth(100);
         const explosionRing = this.add.circle(px, py, 10, 0xffeb3b, 0.8).setDepth(101);
 
         this.tweens.add({
             targets: explosionCircle,
             alpha: 0,
-            duration: 400,
+            duration: 300,
             onComplete: () => explosionCircle.destroy()
         });
 
@@ -4479,34 +4479,33 @@ class GameScene extends Phaser.Scene {
             targets: explosionRing,
             scale: bombRange / 10,
             alpha: 0,
-            duration: 300,
+            duration: 200,
             onComplete: () => explosionRing.destroy()
         });
 
-        // ★ 범위 내 일반 적에게만 대미지
+        // ★ 범위 내 가장 가까운 적 최대 5마리에게만 데미지
+        const nearbyEnemies = [];
         this.enemies.children.each(e => {
             if (!e.active) return;
             const dx = e.x - px, dy = e.y - py;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist <= bombRange) {
-                e.hp -= bombDamage;
-                // 넉백 효과
-                if (dist > 0) {
-                    e.x += (dx / dist) * 30;
-                    e.y += (dy / dist) * 30;
-                }
+                nearbyEnemies.push({ enemy: e, dist: dist, dx: dx, dy: dy });
             }
         });
 
-        // ★ 범위 내 보스에게 데미지 (최대HP의 1%로 더 너프)
-        this.bosses.children.each(b => {
-            if (!b.active) return;
-            const dx = b.x - px, dy = b.y - py;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist <= bombRange) {
-                b.hp -= Math.floor(b.maxHp * 0.01);
+        // 거리순 정렬 후 최대 5마리만 처리
+        nearbyEnemies.sort((a, b) => a.dist - b.dist);
+        nearbyEnemies.slice(0, maxKills).forEach(({ enemy, dist, dx, dy }) => {
+            enemy.hp -= bombDamage;
+            // 약한 넉백
+            if (dist > 0) {
+                enemy.x += (dx / dist) * 15;
+                enemy.y += (dy / dist) * 15;
             }
         });
+
+        // ★ 보스에게는 효과 없음 (완전 제거)
     }
 
     showItemEffect(text) {
