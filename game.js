@@ -5077,29 +5077,55 @@ class LevelUpScene extends Phaser.Scene {
     create() {
         const w = this.cameras.main.width, h = this.cameras.main.height;
         this.add.rectangle(w/2, h/2, w, h, 0x000000, 0.8);
-        this.add.text(w/2, 60, 'LEVEL UP!', { fontSize: '48px', fontStyle: 'bold', fill: '#7cb342' }).setOrigin(0.5);
-        this.add.text(w/2, 100, `Lv.${this.data.level}`, { fontSize: '24px', fill: '#aaa' }).setOrigin(0.5);
+        this.add.text(w/2, 50, 'LEVEL UP!', { fontSize: '42px', fontStyle: 'bold', fill: '#7cb342' }).setOrigin(0.5);
+        this.add.text(w/2, 85, `Lv.${this.data.level}`, { fontSize: '20px', fill: '#aaa' }).setOrigin(0.5);
 
         const choices = this.generateChoices();
-        const cw = 180, gap = 30;
+        const cw = 180, gap = 25;
         const startX = w/2 - ((choices.length-1) * (cw+gap)) / 2;
 
         choices.forEach((c, i) => {
             const x = startX + i*(cw+gap);
-            const card = this.add.rectangle(x, 280, cw, 200, 0x2a2a4a).setStrokeStyle(3, 0x00a8e8).setInteractive({ useHandCursor: true });
+            const card = this.add.rectangle(x, 280, cw, 230, 0x2a2a4a).setStrokeStyle(3, 0x00a8e8).setInteractive({ useHandCursor: true });
 
             const info = c.type === 'weapon' ? WEAPONS[c.key] : PASSIVES[c.key];
             const lvl = c.type === 'weapon' ? (this.data.weapons[c.key] || 0) : (this.data.passives[c.key] || 0);
 
-            this.add.text(x, 220, info.icon, { fontSize: '40px' }).setOrigin(0.5);
-            this.add.text(x, 270, info.name, { fontSize: '16px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-            this.add.text(x, 295, c.isNew ? 'NEW!' : `Lv.${lvl+1}`, { fontSize: '14px', fill: c.isNew ? '#ff0' : '#00a8e8' }).setOrigin(0.5);
-            this.add.text(x, 330, info.desc, { fontSize: '11px', fill: '#aaa', wordWrap: { width: 160 }, align: 'center' }).setOrigin(0.5);
+            this.add.text(x, 200, info.icon, { fontSize: '36px' }).setOrigin(0.5);
+            this.add.text(x, 245, info.name, { fontSize: '14px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
+            this.add.text(x, 265, c.isNew ? 'NEW!' : `Lv.${lvl+1}`, { fontSize: '12px', fill: c.isNew ? '#ff0' : '#00a8e8' }).setOrigin(0.5);
+            this.add.text(x, 295, info.desc, { fontSize: '10px', fill: '#aaa', wordWrap: { width: 160 }, align: 'center' }).setOrigin(0.5);
+
+            // ★★★ 시너지 힌트 표시 ★★★
+            const synergyHint = this.getSynergyHint(c.key);
+            if (synergyHint) {
+                this.add.text(x, 340, '💡 시너지', { fontSize: '9px', fill: '#ff6b6b' }).setOrigin(0.5);
+                this.add.text(x, 355, synergyHint.partnerName, { fontSize: '9px', fill: '#ffd700' }).setOrigin(0.5);
+                this.add.text(x, 370, `+${synergyHint.bonus}`, { fontSize: '8px', fill: '#7cb342' }).setOrigin(0.5);
+            }
 
             card.on('pointerover', () => card.setFillStyle(0x3a3a5a));
             card.on('pointerout', () => card.setFillStyle(0x2a2a4a));
             card.on('pointerdown', () => { this.data.callback(c); this.scene.stop(); });
         });
+    }
+
+    // ★ 시너지 힌트 찾기
+    getSynergyHint(skillKey) {
+        for (const synergy of SYNERGIES) {
+            if (synergy.requires.includes(skillKey)) {
+                // 파트너 스킬 찾기
+                const partnerKey = synergy.requires.find(k => k !== skillKey);
+                const partnerInfo = WEAPONS[partnerKey] || PASSIVES[partnerKey];
+                if (partnerInfo) {
+                    return {
+                        partnerName: `${partnerInfo.icon} ${partnerInfo.name}과 조합`,
+                        bonus: synergy.bonus.desc
+                    };
+                }
+            }
+        }
+        return null;
     }
 
     generateChoices() {
