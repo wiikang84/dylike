@@ -273,27 +273,27 @@ class BootScene extends Phaser.Scene {
         g.fillStyle(p.reflect.mid, 1);
         g.fillRect(cx - 2, cy - 5, 4, 12);
 
-        // ★ DY 로고 (작업복 가슴) - 반사띠 위에 표시
-        // 흰색 배경 (더 크게)
+        // ★★★ DY 로고 (작업복 가슴 중앙) - 크고 명확하게 ★★★
+        // 흰색 배경 (훨씬 크게, 중앙 배치)
         g.fillStyle(0xffffff, 1);
-        g.fillRect(cx + 3, cy - 6, 10, 7);
-        // 검정 테두리
-        g.fillStyle(0x1a1a1a, 1);
-        g.fillRect(cx + 3, cy - 6, 10, 1);
-        g.fillRect(cx + 3, cy, 10, 1);
-        g.fillRect(cx + 3, cy - 6, 1, 7);
-        g.fillRect(cx + 12, cy - 6, 1, 7);
-        // DY 글자 (파란색, 더 크게)
+        g.fillRect(cx - 7, cy - 4, 14, 10);
+        // 파란 테두리 (굵게)
         g.fillStyle(0x0d47a1, 1);
-        // D
-        g.fillRect(cx + 4, cy - 5, 1, 5);
-        g.fillRect(cx + 5, cy - 5, 2, 1);
-        g.fillRect(cx + 5, cy - 1, 2, 1);
-        g.fillRect(cx + 7, cy - 4, 1, 3);
-        // Y
-        g.fillRect(cx + 9, cy - 5, 1, 2);
-        g.fillRect(cx + 11, cy - 5, 1, 2);
-        g.fillRect(cx + 10, cy - 3, 1, 4);
+        g.fillRect(cx - 7, cy - 4, 14, 2);
+        g.fillRect(cx - 7, cy + 4, 14, 2);
+        g.fillRect(cx - 7, cy - 4, 2, 10);
+        g.fillRect(cx + 5, cy - 4, 2, 10);
+        // DY 글자 (파란색, 굵고 크게)
+        g.fillStyle(0x0d47a1, 1);
+        // D (굵게)
+        g.fillRect(cx - 5, cy - 2, 2, 6);
+        g.fillRect(cx - 3, cy - 2, 2, 2);
+        g.fillRect(cx - 3, cy + 2, 2, 2);
+        g.fillRect(cx - 1, cy, 2, 2);
+        // Y (굵게)
+        g.fillRect(cx + 1, cy - 2, 2, 3);
+        g.fillRect(cx + 4, cy - 2, 2, 3);
+        g.fillRect(cx + 2, cy + 1, 3, 3);
 
         // ===== 왼팔 =====
         g.fillStyle(p.outline.uniform, 1);
@@ -416,26 +416,26 @@ class BootScene extends Phaser.Scene {
         g.fillStyle(p.helmet.mid, 1);
         g.fillRect(cx - 10, cy - 23, 8, 2);
 
-        // ★ DY 로고 (안전모 정면) - 더 크고 명확하게
-        // 흰색 배경 사각형
+        // ★★★ DY 로고 (안전모 정면) - 아주 크고 명확하게 ★★★
+        // 흰색 배경 사각형 (더 크게)
         g.fillStyle(0xffffff, 1);
-        g.fillRect(cx - 6, cy - 31, 12, 8);
-        // 파란 테두리
+        g.fillRect(cx - 8, cy - 32, 16, 10);
+        // 파란 테두리 (굵게)
         g.fillStyle(0x0d47a1, 1);
-        g.fillRect(cx - 6, cy - 31, 12, 1);
-        g.fillRect(cx - 6, cy - 24, 12, 1);
-        g.fillRect(cx - 6, cy - 31, 1, 8);
-        g.fillRect(cx + 5, cy - 31, 1, 8);
-        // DY 글자 (파란색, 더 굵게)
+        g.fillRect(cx - 8, cy - 32, 16, 2);
+        g.fillRect(cx - 8, cy - 24, 16, 2);
+        g.fillRect(cx - 8, cy - 32, 2, 10);
+        g.fillRect(cx + 6, cy - 32, 2, 10);
+        // DY 글자 (파란색, 굵게)
         // D
-        g.fillRect(cx - 5, cy - 30, 2, 6);
-        g.fillRect(cx - 3, cy - 30, 2, 2);
-        g.fillRect(cx - 3, cy - 26, 2, 2);
-        g.fillRect(cx - 1, cy - 28, 1, 2);
+        g.fillRect(cx - 6, cy - 30, 2, 6);
+        g.fillRect(cx - 4, cy - 30, 2, 2);
+        g.fillRect(cx - 4, cy - 26, 2, 2);
+        g.fillRect(cx - 2, cy - 28, 2, 2);
         // Y
         g.fillRect(cx + 1, cy - 30, 2, 3);
-        g.fillRect(cx + 3, cy - 30, 2, 3);
-        g.fillRect(cx + 2, cy - 27, 2, 4);
+        g.fillRect(cx + 4, cy - 30, 2, 3);
+        g.fillRect(cx + 2, cy - 27, 3, 4);
     }
 
     // 후면 그리기
@@ -480,6 +480,27 @@ class BootScene extends Phaser.Scene {
         g.fillStyle(p.metal.dark, 1);
         g.fillRect(cx - 9, cy - 2, 18, 3);
         g.fillRect(cx - 9, cy + 4, 18, 3);
+
+        // ★★★ DY 로고 (물탱크 중앙) - 가장 크고 눈에 띄게 ★★★
+        // 흰색 배경 (물탱크 위에 크게)
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(cx - 6, cy - 4, 12, 8);
+        // 파란 테두리
+        g.fillStyle(0x0d47a1, 1);
+        g.fillRect(cx - 6, cy - 4, 12, 1);
+        g.fillRect(cx - 6, cy + 3, 12, 1);
+        g.fillRect(cx - 6, cy - 4, 1, 8);
+        g.fillRect(cx + 5, cy - 4, 1, 8);
+        // DY 글자 (파란색, 굵게)
+        // D
+        g.fillRect(cx - 5, cy - 3, 2, 6);
+        g.fillRect(cx - 3, cy - 3, 2, 2);
+        g.fillRect(cx - 3, cy + 1, 2, 2);
+        g.fillRect(cx - 1, cy - 1, 1, 2);
+        // Y
+        g.fillRect(cx + 1, cy - 3, 2, 2);
+        g.fillRect(cx + 4, cy - 3, 2, 2);
+        g.fillRect(cx + 2, cy - 1, 2, 4);
 
         // 양팔
         g.fillStyle(p.outline.uniform, 1);
@@ -530,6 +551,20 @@ class BootScene extends Phaser.Scene {
         // 반사띠
         g.fillStyle(p.reflect.mid, 1);
         g.fillRect(cx - 6, cy - 2, 12, 3);
+
+        // ★★★ DY 로고 (옆면 작업복) ★★★
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(cx - 5, cy - 6, 10, 7);
+        g.fillStyle(0x0d47a1, 1);
+        // D
+        g.fillRect(cx - 4, cy - 5, 2, 5);
+        g.fillRect(cx - 2, cy - 5, 1, 1);
+        g.fillRect(cx - 2, cy - 1, 1, 1);
+        g.fillRect(cx - 1, cy - 4, 1, 3);
+        // Y
+        g.fillRect(cx + 1, cy - 5, 1, 2);
+        g.fillRect(cx + 3, cy - 5, 1, 2);
+        g.fillRect(cx + 2, cy - 3, 1, 4);
 
         // ===== 앞다리 =====
         g.fillStyle(p.outline.pants, 1);
