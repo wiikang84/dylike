@@ -20,6 +20,46 @@ const CONFIG = {
     EXP_MAGNET_RANGE: 100
 };
 
+// ========== ★ 난이도 설정 ==========
+const DIFFICULTY = {
+    easy: {
+        name: '쉬움',
+        color: 0x4caf50,
+        enemyHpMult: 0.7,
+        enemyDmgMult: 0.6,
+        enemySpeedMult: 0.8,
+        expMult: 1.3,
+        desc: '입문자용'
+    },
+    normal: {
+        name: '보통',
+        color: 0x2196f3,
+        enemyHpMult: 1.0,
+        enemyDmgMult: 1.0,
+        enemySpeedMult: 1.0,
+        expMult: 1.0,
+        desc: '기본 난이도'
+    },
+    hard: {
+        name: '어려움',
+        color: 0xff9800,
+        enemyHpMult: 1.4,
+        enemyDmgMult: 1.3,
+        enemySpeedMult: 1.2,
+        expMult: 0.9,
+        desc: '숙련자용'
+    },
+    hell: {
+        name: '헬모드',
+        color: 0xf44336,
+        enemyHpMult: 2.0,
+        enemyDmgMult: 1.8,
+        enemySpeedMult: 1.4,
+        expMult: 0.7,
+        desc: '지옥체험'
+    }
+};
+
 // ========== 색상 정의 ==========
 const COLORS = {
     PLAYER: 0x00a8e8,
@@ -71,7 +111,7 @@ const WAVE_CONFIG = [
 // ★ 보스 난이도 15% 하향: 속도/데미지 감소
 const BOSS_TYPES = {
     sludge_king: {
-        name: '슬러지 킹',
+        name: '서민영',        // ★ 1층 보스
         color: 0x3d2817,
         radius: 55,           // 120x120 텍스처
         hp: 450,
@@ -81,7 +121,7 @@ const BOSS_TYPES = {
         spawnTime: 180000     // 3분
     },
     drum_giant: {
-        name: '드럼통 거인',
+        name: '강빛나',        // ★ 2층 보스
         color: 0xd84315,
         radius: 65,           // 140x140 텍스처
         hp: 850,
@@ -124,9 +164,9 @@ const WEAPONS = {
     detector: { name: '오염측정기', icon: '📡', desc: '연쇄 번개 공격', baseDamage: 15, baseCooldown: 1200, chainCount: 3, chainRange: 150, maxLevel: 99 },
     gloves: { name: '보호장갑', icon: '🧤', desc: '빠른 펀치 공격', baseDamage: 12, baseCooldown: 200, range: 60, angle: 120, maxLevel: 99 },
     spray: { name: '소독스프레이', icon: '🧴', desc: '정화 영역 생성', baseDamage: 3, baseCooldown: 3000, radius: 80, duration: 5000, maxLevel: 99 },
-    cone: { name: '안전콘', icon: '🔶', desc: '설치 후 폭발', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },
-    truck: { name: '청소차', icon: '🚛', desc: '돌진 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },
-    drone: { name: '환경드론', icon: '🚁', desc: '자동 순찰 공격', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 99 },
+    cone: { name: '안전콘 터렛', icon: '🔶', desc: '터렛 설치, 미사일 발사', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },
+    truck: { name: '미니탱크', icon: '🚛', desc: '탱크 소환, 포격 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },
+    drone: { name: '공격드론', icon: '🚁', desc: '드론 소환, 유도탄 발사', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 99 },
     pipe: { name: '폐수파이프', icon: '🔧', desc: '관통 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 99 }
 };
 
@@ -2489,7 +2529,7 @@ class TitleScene extends Phaser.Scene {
 }
 
 // ==========================================
-// ★ ClassSelectScene (클래스 선택)
+// ★ ClassSelectScene (클래스 + 난이도 선택)
 // ==========================================
 class ClassSelectScene extends Phaser.Scene {
     constructor() { super({ key: 'ClassSelectScene' }); }
@@ -2498,44 +2538,87 @@ class ClassSelectScene extends Phaser.Scene {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
 
-        this.add.rectangle(w/2, h/2, w, h, COLORS.BG);
-        this.add.text(w/2, 60, '클래스 선택', { fontSize: '42px', fontStyle: 'bold', fill: '#00a8e8' }).setOrigin(0.5);
-        this.add.text(w/2, 100, '플레이 스타일을 선택하세요', { fontSize: '16px', fill: '#aaa' }).setOrigin(0.5);
+        this.selectedDifficulty = 'normal';  // 기본 난이도
 
+        this.add.rectangle(w/2, h/2, w, h, COLORS.BG);
+        this.add.text(w/2, 35, '클래스 & 난이도 선택', { fontSize: '36px', fontStyle: 'bold', fill: '#00a8e8' }).setOrigin(0.5);
+
+        // ★★★ 난이도 선택 UI ★★★
+        this.add.text(w/2, 70, '난이도', { fontSize: '16px', fill: '#aaa' }).setOrigin(0.5);
+
+        const diffKeys = Object.keys(DIFFICULTY);
+        const diffBtnWidth = 100;
+        const diffGap = 15;
+        const diffStartX = w/2 - ((diffKeys.length - 1) * (diffBtnWidth + diffGap)) / 2;
+
+        this.diffButtons = [];
+        this.diffTexts = [];
+
+        diffKeys.forEach((key, i) => {
+            const diff = DIFFICULTY[key];
+            const x = diffStartX + i * (diffBtnWidth + diffGap);
+            const y = 105;
+
+            const btn = this.add.rectangle(x, y, diffBtnWidth, 32, key === 'normal' ? diff.color : 0x3a3a4a)
+                .setStrokeStyle(2, diff.color)
+                .setInteractive({ useHandCursor: true });
+
+            const txt = this.add.text(x, y, diff.name, {
+                fontSize: '14px', fontStyle: 'bold', fill: '#fff'
+            }).setOrigin(0.5);
+
+            btn.diffKey = key;
+            this.diffButtons.push(btn);
+            this.diffTexts.push(txt);
+
+            btn.on('pointerdown', () => {
+                this.selectedDifficulty = key;
+                this.updateDifficultyUI();
+            });
+            btn.on('pointerover', () => btn.setStrokeStyle(3, diff.color));
+            btn.on('pointerout', () => btn.setStrokeStyle(2, diff.color));
+        });
+
+        // 난이도 설명 텍스트
+        this.diffDescText = this.add.text(w/2, 135, DIFFICULTY.normal.desc, {
+            fontSize: '12px', fill: '#888'
+        }).setOrigin(0.5);
+
+        // ★★★ 클래스 선택 UI ★★★
         const classKeys = Object.keys(CLASS_TYPES);
-        const cardWidth = 220;
-        const gap = 30;
+        const cardWidth = 200;
+        const gap = 25;
         const startX = w/2 - ((classKeys.length - 1) * (cardWidth + gap)) / 2;
 
         classKeys.forEach((key, i) => {
             const classInfo = CLASS_TYPES[key];
             const x = startX + i * (cardWidth + gap);
-            const y = h/2 + 20;
+            const y = h/2 + 60;
 
             // 카드 배경
-            const card = this.add.rectangle(x, y, cardWidth, 280, 0x2a2a4a)
+            const card = this.add.rectangle(x, y, cardWidth, 240, 0x2a2a4a)
                 .setStrokeStyle(3, classInfo.color)
                 .setInteractive({ useHandCursor: true });
 
             // 아이콘
-            this.add.text(x, y - 90, classInfo.icon, { fontSize: '64px' }).setOrigin(0.5);
+            this.add.text(x, y - 75, classInfo.icon, { fontSize: '52px' }).setOrigin(0.5);
 
             // 클래스 이름
-            this.add.text(x, y - 20, classInfo.name, {
-                fontSize: '24px', fontStyle: 'bold', fill: '#fff'
+            this.add.text(x, y - 15, classInfo.name, {
+                fontSize: '22px', fontStyle: 'bold', fill: '#fff'
             }).setOrigin(0.5);
 
             // 설명
-            this.add.text(x, y + 30, classInfo.desc, {
-                fontSize: '13px', fill: '#aaa',
+            this.add.text(x, y + 25, classInfo.desc, {
+                fontSize: '11px', fill: '#aaa',
                 wordWrap: { width: cardWidth - 20 },
                 align: 'center'
             }).setOrigin(0.5);
 
             // 시작 무기
             const startWeapon = WEAPONS[classInfo.startWeapon];
-            this.add.text(x, y + 80, `시작 무기: ${startWeapon.icon} ${startWeapon.name}`, {
-                fontSize: '12px', fill: '#7cb342'
+            this.add.text(x, y + 70, `${startWeapon.icon} ${startWeapon.name}`, {
+                fontSize: '11px', fill: '#7cb342'
             }).setOrigin(0.5);
 
             // 호버 효과
@@ -2548,19 +2631,48 @@ class ClassSelectScene extends Phaser.Scene {
                 card.setStrokeStyle(3, classInfo.color);
             });
 
-            // 클릭 시 게임 시작
+            // 클릭 시 게임 시작 (난이도 포함)
             card.on('pointerdown', () => {
-                this.scene.start('GameScene', { selectedClass: key });
+                this.scene.start('GameScene', {
+                    selectedClass: key,
+                    difficulty: this.selectedDifficulty
+                });
             });
         });
 
         // 하단 안내
-        this.add.text(w/2, h - 40, '1, 2, 3 키로도 선택 가능', { fontSize: '14px', fill: '#666' }).setOrigin(0.5);
+        this.add.text(w/2, h - 25, '1, 2, 3 키로 클래스 선택 | Q, W, E, R 키로 난이도 선택', { fontSize: '12px', fill: '#666' }).setOrigin(0.5);
 
-        // 키보드 단축키
-        this.input.keyboard.once('keydown-ONE', () => this.scene.start('GameScene', { selectedClass: 'washer' }));
-        this.input.keyboard.once('keydown-TWO', () => this.scene.start('GameScene', { selectedClass: 'purifier' }));
-        this.input.keyboard.once('keydown-THREE', () => this.scene.start('GameScene', { selectedClass: 'technician' }));
+        // 키보드 단축키 - 클래스
+        this.input.keyboard.on('keydown-ONE', () => this.startGame('washer'));
+        this.input.keyboard.on('keydown-TWO', () => this.startGame('purifier'));
+        this.input.keyboard.on('keydown-THREE', () => this.startGame('technician'));
+
+        // 키보드 단축키 - 난이도
+        this.input.keyboard.on('keydown-Q', () => { this.selectedDifficulty = 'easy'; this.updateDifficultyUI(); });
+        this.input.keyboard.on('keydown-W', () => { this.selectedDifficulty = 'normal'; this.updateDifficultyUI(); });
+        this.input.keyboard.on('keydown-E', () => { this.selectedDifficulty = 'hard'; this.updateDifficultyUI(); });
+        this.input.keyboard.on('keydown-R', () => { this.selectedDifficulty = 'hell'; this.updateDifficultyUI(); });
+    }
+
+    updateDifficultyUI() {
+        const diffKeys = Object.keys(DIFFICULTY);
+        diffKeys.forEach((key, i) => {
+            const diff = DIFFICULTY[key];
+            if (key === this.selectedDifficulty) {
+                this.diffButtons[i].setFillStyle(diff.color);
+            } else {
+                this.diffButtons[i].setFillStyle(0x3a3a4a);
+            }
+        });
+        this.diffDescText.setText(DIFFICULTY[this.selectedDifficulty].desc);
+    }
+
+    startGame(classKey) {
+        this.scene.start('GameScene', {
+            selectedClass: classKey,
+            difficulty: this.selectedDifficulty
+        });
     }
 }
 
@@ -2570,9 +2682,11 @@ class ClassSelectScene extends Phaser.Scene {
 class GameScene extends Phaser.Scene {
     constructor() { super({ key: 'GameScene' }); }
 
-    // ★ 클래스 선택 데이터 받기
+    // ★ 클래스 + 난이도 선택 데이터 받기
     init(data) {
         this.selectedClass = data?.selectedClass || 'washer';
+        this.selectedDifficulty = data?.difficulty || 'normal';
+        this.difficultyConfig = DIFFICULTY[this.selectedDifficulty];
     }
 
     create() {
@@ -4071,16 +4185,28 @@ class GameScene extends Phaser.Scene {
         const offsetX = Math.cos(angle) * dist;
         const offsetY = Math.sin(angle) * dist;
 
-        // 안전콘 그래픽 (포탑 스타일)
+        // ★ 터렛 그래픽 (SF 스타일 포탑)
         const cone = this.add.graphics().setDepth(12);
+        // 베이스 (원형)
+        cone.fillStyle(0x37474f, 1);
+        cone.fillCircle(0, 5, 18);
+        cone.fillStyle(0x455a64, 1);
+        cone.fillCircle(0, 5, 14);
+        // 포탑 본체
         cone.fillStyle(0xff6f00, 1);
-        cone.fillTriangle(0, -25, -15, 10, 15, 10);
+        cone.fillRect(-8, -20, 16, 25);
+        // 포신
+        cone.fillStyle(0xffab00, 1);
+        cone.fillRect(-4, -30, 8, 15);
+        cone.fillStyle(0xff5722, 1);
+        cone.fillCircle(0, -30, 5);
+        // 디테일
         cone.fillStyle(0x1a1a1a, 1);
-        cone.fillRect(-12, -5, 24, 4);
-        cone.fillRect(-12, 3, 24, 4);
-        // 포탑 베이스
-        cone.fillStyle(0x424242, 1);
-        cone.fillRect(-18, 10, 36, 8);
+        cone.fillRect(-10, -8, 20, 3);
+        cone.fillRect(-10, 0, 20, 3);
+        // 에너지 코어
+        cone.fillStyle(0x00e5ff, 0.8);
+        cone.fillCircle(0, -5, 4);
         cone.x = this.player.x + offsetX;
         cone.y = this.player.y + offsetY;
 
@@ -4176,18 +4302,34 @@ class GameScene extends Phaser.Scene {
         const offsetX = Math.cos(angle) * dist;
         const offsetY = Math.sin(angle) * dist;
 
-        // 청소차 그래픽 (터렛 스타일)
+        // ★ 미니탱크 그래픽 (SF 스타일 탱크)
         const truck = this.add.graphics().setDepth(12);
+        // 궤도 (좌우)
+        truck.fillStyle(0x37474f, 1);
+        truck.fillRoundedRect(-28, -8, 12, 24, 4);
+        truck.fillRoundedRect(16, -8, 12, 24, 4);
+        // 차체
+        truck.fillStyle(0x4caf50, 1);
+        truck.fillRoundedRect(-18, -12, 36, 24, 3);
+        truck.fillStyle(0x388e3c, 1);
+        truck.fillRect(-14, -8, 28, 16);
+        // 포탑 베이스
+        truck.fillStyle(0x2e7d32, 1);
+        truck.fillCircle(0, -2, 14);
+        // 포신
+        truck.fillStyle(0x1b5e20, 1);
+        truck.fillRect(-4, -25, 8, 20);
         truck.fillStyle(0xff6f00, 1);
-        truck.fillRect(-22, -14, 44, 28);
-        truck.fillStyle(0x1a1a1a, 1);
-        truck.fillRect(-27, -10, 10, 20);
-        truck.fillStyle(0x424242, 1);
-        truck.fillCircle(-15, 14, 7);
-        truck.fillCircle(15, 14, 7);
-        // 포탑 (위에 원)
-        truck.fillStyle(0x616161, 1);
-        truck.fillCircle(0, -5, 12);
+        truck.fillCircle(0, -25, 5);
+        // 디테일
+        truck.fillStyle(0xffeb3b, 0.8);
+        truck.fillCircle(0, -2, 5);
+        // 바퀴
+        truck.fillStyle(0x212121, 1);
+        truck.fillCircle(-22, 0, 5);
+        truck.fillCircle(-22, 10, 5);
+        truck.fillCircle(22, 0, 5);
+        truck.fillCircle(22, 10, 5);
         truck.x = this.player.x + offsetX;
         truck.y = this.player.y + offsetY;
 
@@ -4292,19 +4434,35 @@ class GameScene extends Phaser.Scene {
         // 플레이어 주변 위치 (위쪽)
         const hoverOffset = { x: Phaser.Math.Between(-40, 40), y: -55 };
 
-        // 드론 그래픽 (본체 + 프로펠러)
+        // ★ SF 공격드론 그래픽
         const drone = this.add.graphics().setDepth(12);
-        drone.fillStyle(0x90a4ae, 1);
-        drone.fillRect(-14, -7, 28, 14);
-        drone.fillStyle(0x1565c0, 1);
-        drone.fillCircle(0, 0, 7);
+        // 본체 (육각형 스타일)
+        drone.fillStyle(0x263238, 1);
+        drone.fillRect(-16, -8, 32, 16);
         drone.fillStyle(0x37474f, 1);
-        drone.fillRect(-20, -3, 10, 6);
-        drone.fillRect(10, -3, 10, 6);
-        // 미사일 포드
+        drone.fillRect(-12, -6, 24, 12);
+        // 중앙 코어 (발광)
+        drone.fillStyle(0x00e5ff, 1);
+        drone.fillCircle(0, 0, 6);
+        drone.fillStyle(0x00bcd4, 0.5);
+        drone.fillCircle(0, 0, 9);
+        // 날개 (좌우)
         drone.fillStyle(0x455a64, 1);
-        drone.fillRect(-8, 7, 6, 8);
-        drone.fillRect(2, 7, 6, 8);
+        drone.fillTriangle(-25, 0, -12, -8, -12, 8);
+        drone.fillTriangle(25, 0, 12, -8, 12, 8);
+        // 프로펠러 (4개)
+        drone.fillStyle(0x78909c, 1);
+        drone.fillCircle(-20, -10, 6);
+        drone.fillCircle(20, -10, 6);
+        drone.fillCircle(-20, 10, 6);
+        drone.fillCircle(20, 10, 6);
+        // 미사일 포드 (아래)
+        drone.fillStyle(0xf44336, 1);
+        drone.fillRect(-10, 8, 6, 10);
+        drone.fillRect(4, 8, 6, 10);
+        drone.fillStyle(0xffeb3b, 1);
+        drone.fillCircle(-7, 18, 3);
+        drone.fillCircle(7, 18, 3);
         drone.x = this.player.x + hoverOffset.x;
         drone.y = this.player.y + hoverOffset.y;
 
@@ -4677,12 +4835,13 @@ class GameScene extends Phaser.Scene {
             // ★ 몬스터 크기 스케일 계산 (시간+레벨+전투력에 따라 커짐)
             const sizeScale = Math.min(timeScale.size * levelScale.size * powerScale.size * eliteMultiplier.size, 3.0);
 
-            // ★ 플레이어 전투력에 비례한 몬스터 능력치
-            enemy.hp = Math.floor(type.hp * timeScale.hp * levelScale.hp * powerScale.hp * eliteMultiplier.hp);
+            // ★ 플레이어 전투력에 비례한 몬스터 능력치 (난이도 배율 적용)
+            const diffMult = this.difficultyConfig || DIFFICULTY.normal;
+            enemy.hp = Math.floor(type.hp * timeScale.hp * levelScale.hp * powerScale.hp * eliteMultiplier.hp * diffMult.enemyHpMult);
             enemy.maxHp = enemy.hp;
-            enemy.enemySpeed = Math.floor(type.speed * timeScale.speed * eliteMultiplier.speed);
-            enemy.enemyDamage = Math.floor(type.damage * timeScale.damage * levelScale.damage * powerScale.damage * eliteMultiplier.damage);
-            enemy.enemyExp = Math.ceil(type.exp * eliteMultiplier.exp * (1 + playerLevel * 0.02) * Math.sqrt(playerPower));  // 전투력 비례 경험치
+            enemy.enemySpeed = Math.floor(type.speed * timeScale.speed * eliteMultiplier.speed * diffMult.enemySpeedMult);
+            enemy.enemyDamage = Math.floor(type.damage * timeScale.damage * levelScale.damage * powerScale.damage * eliteMultiplier.damage * diffMult.enemyDmgMult);
+            enemy.enemyExp = Math.ceil(type.exp * eliteMultiplier.exp * (1 + playerLevel * 0.02) * Math.sqrt(playerPower) * diffMult.expMult);  // 전투력 비례 경험치 + 난이도 배율
             enemy.enemyRadius = type.radius * sizeScale;
             enemy.enemyType = typeKey;
             enemy.isElite = isElite;
@@ -4843,17 +5002,18 @@ class GameScene extends Phaser.Scene {
             boss.setActive(true).setVisible(true);
             boss.setTexture(textureKey);
 
-            // ★ 층별 보스 HP 배율 적용 (바벨탑 스타일)
+            // ★ 층별 보스 HP 배율 적용 (바벨탑 스타일) + 난이도 배율
             const currentFloor = this.playerState.currentFloor || 1;
             const floorConfig = FLOOR_CONFIG[currentFloor - 1];
             const bossHpMult = floorConfig?.bossHpMult || 1.0;
+            const diffMult = this.difficultyConfig || DIFFICULTY.normal;
 
-            // 보스 데이터 설정 (층 배율 적용)
-            boss.hp = Math.floor(type.hp * bossHpMult);
+            // 보스 데이터 설정 (층 배율 + 난이도 배율 적용)
+            boss.hp = Math.floor(type.hp * bossHpMult * diffMult.enemyHpMult);
             boss.maxHp = boss.hp;
-            boss.bossSpeed = type.speed;
-            boss.bossDamage = Math.floor(type.damage * (1 + (currentFloor - 1) * 0.2));  // 층당 20% 데미지 증가
-            boss.bossExp = Math.floor(type.exp * (1 + (currentFloor - 1) * 0.3));  // 층당 30% 경험치 증가
+            boss.bossSpeed = Math.floor(type.speed * diffMult.enemySpeedMult);
+            boss.bossDamage = Math.floor(type.damage * (1 + (currentFloor - 1) * 0.2) * diffMult.enemyDmgMult);
+            boss.bossExp = Math.floor(type.exp * (1 + (currentFloor - 1) * 0.3) * diffMult.expMult);
             boss.bossRadius = type.radius;
             boss.bossType = bossKey;
             boss.bossName = type.name;
