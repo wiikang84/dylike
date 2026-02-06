@@ -3034,7 +3034,6 @@ class GameScene extends Phaser.Scene {
         // ★ 시너지 보너스 적용
         const synergyBonus = this.getSynergyBonus();
         const dmgBonus = 1 + (this.playerState.passives.damage || 0) * PASSIVES.damage.effect + synergyBonus.damage;
-        const cdBonus = synergyBonus.cooldown;  // 쿨다운 감소
 
         // 고압 세척기
         const wgLv = this.playerState.weapons.waterGun || 0;
@@ -3066,9 +3065,9 @@ class GameScene extends Phaser.Scene {
             }
         }
 
-        // ★ 신규 무기들
-        const cdBonus = 1 - (this.playerState.passives.cooldown || 0) * PASSIVES.cooldown.effect;
-        const areaBonus = 1 + (this.playerState.passives.area || 0) * PASSIVES.area.effect;
+        // ★ 신규 무기들 (시너지 보너스 포함)
+        const cdBonus = 1 - (this.playerState.passives.cooldown || 0) * PASSIVES.cooldown.effect - synergyBonus.cooldown;
+        const areaBonus = 1 + (this.playerState.passives.area || 0) * PASSIVES.area.effect + synergyBonus.area;
 
         // 산업용 송풍기
         const blowerLv = this.playerState.weapons.blower || 0;
