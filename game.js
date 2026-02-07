@@ -3,6 +3,222 @@
 // Phaser.js 버전
 // ==========================================
 
+// ========== 프로시저럴 사운드 매니저 (Web Audio API) ==========
+class GameSoundManager {
+    constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.activeSounds = [];
+        this.lastPlayTime = {};
+        this.MAX_CONCURRENT = 5;
+        this.enabled = localStorage.getItem('dy_sound') !== 'off';
+        this.unlocked = false;
+    }
+
+    init() {
+        try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.value = this.enabled ? 0.5 : 0;
+            this.masterGain.connect(this.ctx.destination);
+        } catch (e) { /* Web Audio API 미지원 */ }
+    }
+
+    unlock() {
+        if (!this.ctx) this.init();
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+        this.unlocked = true;
+    }
+
+    toggle() {
+        this.enabled = !this.enabled;
+        localStorage.setItem('dy_sound', this.enabled ? 'on' : 'off');
+        if (this.masterGain) {
+            this.masterGain.gain.value = this.enabled ? 0.5 : 0;
+        }
+        return this.enabled;
+    }
+
+    play(name, volumeScale) {
+        if (!this.ctx || !this.enabled || !this.unlocked) return;
+        const now = performance.now();
+        const minInterval = (name === 'shoot' || name === 'enemyHit' || name === 'expPickup') ? 100 : 50;
+        if (now - (this.lastPlayTime[name] || 0) < minInterval) return;
+        this.lastPlayTime[name] = now;
+
+        // 동시 재생 제한
+        this.activeSounds = this.activeSounds.filter(s => s.endTime > now);
+        if (this.activeSounds.length >= this.MAX_CONCURRENT) {
+            const oldest = this.activeSounds.shift();
+            try { oldest.osc.stop(); } catch(e) {}
+        }
+
+        try {
+            const vol = volumeScale || 0.3;
+            const g = this.ctx.createGain();
+            g.gain.value = vol;
+            g.connect(this.masterGain);
+            const t = this.ctx.currentTime;
+            let duration = 0.1;
+
+            switch (name) {
+                case 'shoot': {
+                    const o = this.ctx.createOscillator();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(800, t);
+                    o.frequency.exponentialRampToValueAtTime(200, t + 0.08);
+                    g.gain.setValueAtTime(0.2, t);
+                    g.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                    o.connect(g); o.start(t); o.stop(t + 0.08);
+                    duration = 0.08;
+                    this.activeSounds.push({ osc: o, endTime: now + 80 });
+                    break;
+                }
+                case 'enemyHit': {
+                    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.05, this.ctx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = buf;
+                    g.gain.value = 0.15;
+                    src.connect(g); src.start(t);
+                    duration = 0.05;
+                    this.activeSounds.push({ osc: src, endTime: now + 50 });
+                    break;
+                }
+                case 'enemyDeath': {
+                    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.12, this.ctx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2);
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = buf;
+                    const o = this.ctx.createOscillator();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(300, t);
+                    o.frequency.exponentialRampToValueAtTime(80, t + 0.12);
+                    const g2 = this.ctx.createGain();
+                    g2.gain.setValueAtTime(0.3, t);
+                    g2.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                    o.connect(g2); g2.connect(g);
+                    g.gain.value = 0.3;
+                    src.connect(g); src.start(t); o.start(t); o.stop(t + 0.12);
+                    duration = 0.12;
+                    this.activeSounds.push({ osc: o, endTime: now + 120 });
+                    break;
+                }
+                case 'playerHit': {
+                    const o = this.ctx.createOscillator();
+                    o.type = 'square';
+                    o.frequency.setValueAtTime(200, t);
+                    o.frequency.exponentialRampToValueAtTime(80, t + 0.15);
+                    g.gain.setValueAtTime(0.5, t);
+                    g.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                    o.connect(g); o.start(t); o.stop(t + 0.15);
+                    duration = 0.15;
+                    this.activeSounds.push({ osc: o, endTime: now + 150 });
+                    break;
+                }
+                case 'expPickup': {
+                    const o = this.ctx.createOscillator();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(600, t);
+                    o.frequency.exponentialRampToValueAtTime(1200, t + 0.08);
+                    g.gain.setValueAtTime(0.1, t);
+                    g.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                    o.connect(g); o.start(t); o.stop(t + 0.08);
+                    duration = 0.08;
+                    this.activeSounds.push({ osc: o, endTime: now + 80 });
+                    break;
+                }
+                case 'levelUp': {
+                    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+                    notes.forEach((freq, i) => {
+                        const o = this.ctx.createOscillator();
+                        o.type = 'sine';
+                        o.frequency.value = freq;
+                        const ng = this.ctx.createGain();
+                        ng.gain.setValueAtTime(0.6, t + i * 0.1);
+                        ng.gain.exponentialRampToValueAtTime(0.01, t + i * 0.1 + 0.15);
+                        o.connect(ng); ng.connect(g);
+                        g.gain.value = 0.6;
+                        o.start(t + i * 0.1); o.stop(t + i * 0.1 + 0.15);
+                    });
+                    duration = 0.45;
+                    this.activeSounds.push({ osc: { stop(){} }, endTime: now + 450 });
+                    break;
+                }
+                case 'fireBomb': {
+                    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.2, this.ctx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.5);
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = buf;
+                    const o = this.ctx.createOscillator();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(150, t);
+                    o.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+                    const g2 = this.ctx.createGain();
+                    g2.gain.setValueAtTime(0.35, t);
+                    g2.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                    o.connect(g2); g2.connect(g);
+                    g.gain.value = 0.35;
+                    src.connect(g); src.start(t); o.start(t); o.stop(t + 0.2);
+                    duration = 0.2;
+                    this.activeSounds.push({ osc: o, endTime: now + 200 });
+                    break;
+                }
+                case 'shockwave': {
+                    const o = this.ctx.createOscillator();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(100, t);
+                    o.frequency.exponentialRampToValueAtTime(25, t + 0.3);
+                    g.gain.setValueAtTime(0.35, t);
+                    g.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    o.connect(g); o.start(t); o.stop(t + 0.3);
+                    duration = 0.3;
+                    this.activeSounds.push({ osc: o, endTime: now + 300 });
+                    break;
+                }
+                case 'lightning': {
+                    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.1, this.ctx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) {
+                        const env = i < data.length * 0.1 ? i / (data.length * 0.1) : Math.pow(1 - i / data.length, 3);
+                        data[i] = (Math.random() * 2 - 1) * env;
+                    }
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = buf;
+                    g.gain.value = 0.35;
+                    src.connect(g); src.start(t);
+                    duration = 0.1;
+                    this.activeSounds.push({ osc: src, endTime: now + 100 });
+                    break;
+                }
+                case 'bossWarning': {
+                    for (let i = 0; i < 3; i++) {
+                        const o = this.ctx.createOscillator();
+                        o.type = 'square';
+                        o.frequency.value = 440;
+                        const ng = this.ctx.createGain();
+                        ng.gain.setValueAtTime(0.7, t + i * 0.18);
+                        ng.gain.exponentialRampToValueAtTime(0.01, t + i * 0.18 + 0.12);
+                        o.connect(ng); ng.connect(g);
+                        g.gain.value = 0.7;
+                        o.start(t + i * 0.18); o.stop(t + i * 0.18 + 0.12);
+                    }
+                    duration = 0.5;
+                    this.activeSounds.push({ osc: { stop(){} }, endTime: now + 500 });
+                    break;
+                }
+            }
+        } catch (e) { /* 사운드 에러 무시 */ }
+    }
+}
+
+const gameSoundManager = new GameSoundManager();
+
 // ========== 게임 설정 ==========
 const CONFIG = {
     WIDTH: 960,
@@ -2494,6 +2710,10 @@ class TitleScene extends Phaser.Scene {
     constructor() { super({ key: 'TitleScene' }); }
 
     create() {
+        // ★ 사운드 초기화
+        gameSoundManager.init();
+        this.input.once('pointerdown', () => gameSoundManager.unlock());
+
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
 
@@ -2504,7 +2724,19 @@ class TitleScene extends Phaser.Scene {
         const btn = this.add.rectangle(w/2, h/2+80, 200, 50, 0x00a8e8).setInteractive({ useHandCursor: true });
         this.add.text(w/2, h/2+80, '게임 시작', { fontSize: '24px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
         // btn.on('pointerdown', () => this.scene.start('GameScene'));  // ★ 기존 코드 (ClassSelectScene으로 변경)
-        btn.on('pointerdown', () => this.scene.start('ClassSelectScene'));
+        btn.on('pointerdown', () => { gameSoundManager.unlock(); this.scene.start('ClassSelectScene'); });
+
+        // ★ 사운드 토글 버튼
+        const soundBtn = this.add.rectangle(w - 50, 40, 80, 36, 0x4a4a6a)
+            .setInteractive({ useHandCursor: true })
+            .setStrokeStyle(2, 0x00a8e8);
+        const soundText = this.add.text(w - 50, 40, gameSoundManager.enabled ? '🔊 ON' : '🔇 OFF', { fontSize: '14px', fill: '#fff' }).setOrigin(0.5);
+        soundBtn.on('pointerdown', () => {
+            const on = gameSoundManager.toggle();
+            soundText.setText(on ? '🔊 ON' : '🔇 OFF');
+        });
+        soundBtn.on('pointerover', () => soundBtn.setFillStyle(0x5a5a7a));
+        soundBtn.on('pointerout', () => soundBtn.setFillStyle(0x4a4a6a));
 
         // ★ 전체화면 버튼 추가 (가운데 위쪽으로 이동)
         const fullscreenBtn = this.add.rectangle(w/2, 40, 120, 40, 0x4a4a6a)
@@ -2693,6 +2925,8 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
+        // 사운드 해금 (게임 시작 시)
+        gameSoundManager.unlock();
         this.gameTime = 0;
         this.isPaused = false;
         this.hitStopActive = false;  // ★ 히트 스톱 상태
@@ -2963,6 +3197,18 @@ class GameScene extends Phaser.Scene {
             }
         });
         this.hud.add([this.fullscreenBtn]);
+
+        // ★★★ 사운드 토글 버튼 (게임 중) ★★★
+        this.soundBtn = this.add.text(CONFIG.WIDTH - 210, hpY, gameSoundManager.enabled ? '🔊' : '🔇', {
+            fontSize: '20px',
+            backgroundColor: '#333',
+            padding: { x: 6, y: 4 }
+        }).setScrollFactor(0).setDepth(100).setOrigin(0.5).setInteractive();
+        this.soundBtn.on('pointerdown', () => {
+            const on = gameSoundManager.toggle();
+            this.soundBtn.setText(on ? '🔊' : '🔇');
+        });
+        this.hud.add([this.soundBtn]);
 
         // ★★★ 정지 버튼 추가 ★★★
         this.pauseBtn = this.add.text(CONFIG.WIDTH - 130, hpY, '⏸️', {
@@ -3655,6 +3901,7 @@ class GameScene extends Phaser.Scene {
 
         // 데미지 적용
         enemy.hp -= finalDamage;
+        gameSoundManager.play('enemyHit');
 
         // 크리티컬 이펙트
         if (isCrit) {
@@ -3703,6 +3950,7 @@ class GameScene extends Phaser.Scene {
     fireWaterGun(lv, dmgBonus) {
         const target = this.findClosestEnemy();
         if (!target) return;
+        gameSoundManager.play('shoot');
 
         const dmg = WEAPONS.waterGun.baseDamage * (1 + lv*0.2) * dmgBonus;
         const count = Math.min(lv, 3);
@@ -4211,6 +4459,7 @@ class GameScene extends Phaser.Scene {
                 ease: 'Quad.easeIn',
                 onComplete: () => {
                     const boomX = bomb.x, boomY = bomb.y;
+                    gameSoundManager.play('fireBomb');
                     // 폭발 이펙트 (경량)
                     const boom = this.add.circle(boomX, boomY, 15, 0xff5722, 0.7).setDepth(10);
                     this.tweens.add({ targets: boom, scale: blastRadius / 15, alpha: 0, duration: 250, onComplete: () => boom.destroy() });
@@ -4428,6 +4677,7 @@ class GameScene extends Phaser.Scene {
         const shockRadius = 80 + lv * 12;
         const px = this.player.x, py = this.player.y;
 
+        gameSoundManager.play('shockwave');
         // 충격파 이펙트 (원형 확장)
         const wave = this.add.circle(px, py, 20, 0x4caf50, 0).setStrokeStyle(3, 0x76ff03).setDepth(10);
         const innerWave = this.add.circle(px, py, 15, 0x66bb6a, 0.3).setDepth(9);
@@ -4659,6 +4909,7 @@ class GameScene extends Phaser.Scene {
             this.time.delayedCall(i * 60, () => {
                 const e = t.enemy;
                 if (!e.active) return;
+                gameSoundManager.play('lightning');
                 // 번개 라인 (위에서 아래로)
                 const lightning = this.add.rectangle(e.x, e.y - 80, 3, 160, 0x00e5ff, 0.8).setDepth(11);
                 const flash = this.add.circle(e.x, e.y, 12, 0x00e5ff, 0.6).setDepth(10);
@@ -5248,6 +5499,7 @@ class GameScene extends Phaser.Scene {
 
             // 사망 처리
             if (e.hp <= 0) {
+                gameSoundManager.play('enemyDeath');
                 this.playerState.kills++;
 
                 // 일반 적은 히트스톱/쉐이크 없음 (성능 최적화)
@@ -5400,6 +5652,7 @@ class GameScene extends Phaser.Scene {
 
     // ★ 보스 등장 효과
     bossAppearEffect(boss, type) {
+        gameSoundManager.play('bossWarning');
         // 1. 화면 경고 플래시
         this.cameras.main.flash(300, 255, 0, 0, true);
 
@@ -6064,6 +6317,7 @@ class GameScene extends Phaser.Scene {
     // 보스 플레이어 충돌 처리
     onPlayerHitBoss(player, boss) {
         if (!boss.active || this.playerState.invincibleTime > 0) return;
+        gameSoundManager.play('playerHit');
         // ★ 방어력 패시브 적용
         const armorReduction = (this.playerState.passives.armor || 0) * PASSIVES.armor.effect;
         const finalDamage = Math.max(1, boss.bossDamage - armorReduction);
@@ -6156,6 +6410,7 @@ class GameScene extends Phaser.Scene {
 
     onCollectExp(player, exp) {
         if (!exp.active) return;
+        gameSoundManager.play('expPickup');
         // ★ 숙련도 보너스 적용
         const growthBonus = 1 + (this.playerState.passives.growth || 0) * PASSIVES.growth.effect;
         this.playerState.exp += (exp.expValue || 1) * growthBonus;
@@ -6165,6 +6420,7 @@ class GameScene extends Phaser.Scene {
 
     onPlayerHit(player, enemy) {
         if (!enemy.active || this.playerState.invincibleTime > 0) return;
+        gameSoundManager.play('playerHit');
         // ★ 방어력 패시브 적용
         const armorReduction = (this.playerState.passives.armor || 0) * PASSIVES.armor.effect;
         const finalDamage = Math.max(1, enemy.enemyDamage - armorReduction);
@@ -6201,6 +6457,7 @@ class GameScene extends Phaser.Scene {
     }
 
     levelUp() {
+        gameSoundManager.play('levelUp');
         this.playerState.exp -= this.playerState.expToNext;
         this.playerState.level++;
         // ★★★ 뱀서라이크 스타일 경험치 곡선 (벤치마킹) ★★★
