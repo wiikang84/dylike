@@ -2,178 +2,209 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="screen-orientation" content="portrait">
     <title>DYlike - 디와이산업개발 슈팅 게임</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
             background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Courier New', monospace;
             overflow: hidden;
+            font-family: 'Courier New', monospace;
             touch-action: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-text-size-adjust: none;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100dvh; /* dynamic viewport height for mobile address bar */
         }
 
-        .game-container {
+        #gameContainer {
             position: relative;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-height: 0; /* flex child overflow fix */
         }
 
         canvas {
-            border: 2px solid #0ff;
-            box-shadow: 0 0 20px #0ff, 0 0 40px #0ff, inset 0 0 20px rgba(0, 255, 255, 0.1);
             display: block;
+            border: 2px solid #0ff;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
             cursor: pointer;
+            /* width/height set by JS */
         }
-
-        canvas:focus {
-            outline: none;
-        }
+        canvas:focus { outline: none; }
 
         .ui {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
+            top: 4px; left: 8px; right: 8px;
             display: flex;
             justify-content: space-between;
             color: #0ff;
-            font-size: 18px;
-            text-shadow: 0 0 10px #0ff;
+            font-size: 13px;
+            text-shadow: 0 0 8px #0ff;
             pointer-events: none;
+            z-index: 5;
         }
 
-        /* 전체화면 버튼 */
         #fullscreenBtn {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 36px;
-            height: 36px;
-            background: rgba(0,0,0,0.6);
+            top: 4px; right: 4px;
+            width: 32px; height: 32px;
+            background: rgba(0,0,0,0.7);
             border: 1px solid #0ff;
             color: #0ff;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             border-radius: 4px;
             z-index: 10;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
         }
-        #fullscreenBtn:hover {
-            background: rgba(0,255,255,0.2);
+        #fullscreenBtn:hover, #fullscreenBtn:active {
+            background: rgba(0,255,255,0.3);
         }
 
-        /* 모바일 터치 컨트롤 */
-        .touch-controls {
+        /* ====== 터치 컨트롤 ====== */
+        #touchControls {
             display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 140px;
-            pointer-events: none;
-            z-index: 20;
-        }
-        .touch-controls.active {
-            display: flex;
+            width: 100%;
+            flex-shrink: 0;
+            background: linear-gradient(to bottom, rgba(0,10,20,0.95), rgba(0,0,0,1));
+            border-top: 1px solid rgba(0,255,255,0.2);
+            padding: 8px 12px;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
             justify-content: space-between;
-            align-items: flex-end;
-            padding: 10px 15px;
+            align-items: center;
         }
+        #touchControls.active {
+            display: flex;
+        }
+
         .touch-left, .touch-right {
             display: flex;
-            gap: 8px;
-            pointer-events: auto;
+            gap: 10px;
+            align-items: center;
         }
+        .touch-right {
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
         .touch-btn {
-            width: 56px;
-            height: 56px;
+            width: 64px; height: 64px;
             border-radius: 50%;
-            background: rgba(0,255,255,0.15);
+            background: rgba(0,255,255,0.12);
             border: 2px solid rgba(0,255,255,0.4);
             color: #0ff;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            pointer-events: auto;
             -webkit-tap-highlight-color: transparent;
+            transition: background 0.1s, transform 0.1s;
         }
         .touch-btn:active, .touch-btn.pressed {
-            background: rgba(0,255,255,0.4);
+            background: rgba(0,255,255,0.45);
             border-color: #0ff;
+            transform: scale(0.92);
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
         }
         .touch-btn.fire {
-            width: 70px;
-            height: 70px;
-            background: rgba(255,136,0,0.2);
+            width: 80px; height: 80px;
+            background: rgba(255,136,0,0.15);
             border-color: rgba(255,136,0,0.5);
             color: #f80;
-            font-size: 14px;
+            font-size: 15px;
+            font-weight: bold;
         }
         .touch-btn.fire:active, .touch-btn.fire.pressed {
             background: rgba(255,136,0,0.5);
+            border-color: #f80;
+            box-shadow: 0 0 20px rgba(255,136,0,0.6);
         }
         .touch-btn.skill {
-            width: 48px;
-            height: 48px;
-            font-size: 14px;
-            background: rgba(255,255,0,0.1);
+            width: 52px; height: 52px;
+            font-size: 16px;
+            background: rgba(255,255,0,0.08);
             border-color: rgba(255,255,0,0.3);
             color: #ff0;
         }
         .touch-btn.skill:active, .touch-btn.skill.pressed {
             background: rgba(255,255,0,0.4);
+            border-color: #ff0;
+            box-shadow: 0 0 15px rgba(255,255,0,0.5);
         }
 
-        /* 전체화면 대응 */
-        .game-container:fullscreen,
-        .game-container:-webkit-full-screen {
-            display: flex;
+        /* 가로모드 경고 */
+        #landscapeWarning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 9999;
             justify-content: center;
             align-items: center;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
+            flex-direction: column;
+            color: #0ff;
+            font-size: 18px;
+            text-align: center;
+            gap: 20px;
+        }
+        #landscapeWarning .rotate-icon {
+            font-size: 60px;
+            animation: rotateAnim 2s ease-in-out infinite;
+        }
+        @keyframes rotateAnim {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
         }
 
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
+        /* 전체화면 */
+        :fullscreen, :-webkit-full-screen {
+            background: #000 !important;
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            #landscapeWarning { display: flex !important; }
+            #gameContainer, #touchControls { display: none !important; }
         }
     </style>
 </head>
 <body>
-    <div class="game-container" id="gameContainer">
-        <canvas id="gameCanvas" width="480" height="640" tabindex="0"></canvas>
+    <!-- 가로모드 경고 -->
+    <div id="landscapeWarning">
+        <div class="rotate-icon">📱</div>
+        <div>세로 모드로 전환해주세요!</div>
+        <div style="font-size:14px; color:#888;">Please rotate to portrait mode</div>
+    </div>
 
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="480" height="640" tabindex="0"></canvas>
         <div class="ui" id="gameUI">
             <span id="score">SCORE: 0</span>
             <span id="lives">LIVES: ♥♥♥</span>
             <span id="level">LEVEL: 1</span>
         </div>
-
         <button id="fullscreenBtn" title="전체화면">⛶</button>
     </div>
 
     <!-- 모바일 터치 컨트롤 -->
-    <div class="touch-controls" id="touchControls">
+    <div id="touchControls">
         <div class="touch-left">
             <div class="touch-btn" id="btnLeft">◀</div>
             <div class="touch-btn" id="btnRight">▶</div>
@@ -187,6 +218,9 @@
     </div>
 
     <script>
+        // ========================================
+        // 초기 설정 & 캔버스 리사이즈
+        // ========================================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
@@ -195,16 +229,41 @@
         const gameContainer = document.getElementById('gameContainer');
         const touchControls = document.getElementById('touchControls');
 
-        // 자동 포커스
-        canvas.focus();
+        // 터치 디바이스 감지 (UA + 기능 감지 모두)
+        const isTouchDevice = ('ontouchstart' in window) ||
+            (navigator.maxTouchPoints > 0) ||
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // ========================================
-        // 모바일 감지 & 터치 컨트롤
-        // ========================================
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
-        if (isMobile) {
+        if (isTouchDevice) {
             touchControls.classList.add('active');
         }
+
+        // 캔버스 리사이즈 (화면에 맞게 CSS 크기 조정, 내부 해상도는 480x640 유지)
+        function resizeCanvas() {
+            const controlsH = touchControls.classList.contains('active') ? touchControls.offsetHeight : 0;
+            const availW = window.innerWidth;
+            const availH = window.innerHeight - controlsH;
+            const ratio = canvas.width / canvas.height; // 0.75
+
+            let displayW, displayH;
+            if (availW / availH < ratio) {
+                displayW = availW - 4;
+                displayH = displayW / ratio;
+            } else {
+                displayH = availH - 4;
+                displayW = displayH * ratio;
+            }
+
+            canvas.style.width = Math.floor(displayW) + 'px';
+            canvas.style.height = Math.floor(displayH) + 'px';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
+        resizeCanvas();
+
+        // 자동 포커스
+        canvas.focus();
 
         // ========================================
         // 전체화면 토글
@@ -215,15 +274,20 @@
         });
 
         function toggleFullscreen() {
+            const el = document.documentElement; // 전체 페이지 fullscreen (컨트롤 포함)
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                const el = gameContainer;
                 if (el.requestFullscreen) el.requestFullscreen();
                 else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
             } else {
                 if (document.exitFullscreen) document.exitFullscreen();
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             }
+            setTimeout(resizeCanvas, 300);
         }
+
+        // 전체화면 전환 시 리사이즈
+        document.addEventListener('fullscreenchange', () => setTimeout(resizeCanvas, 200));
+        document.addEventListener('webkitfullscreenchange', () => setTimeout(resizeCanvas, 200));
 
         // ========================================
         // 1단계: 성능 최적화
@@ -771,16 +835,21 @@
             ctx.fillText('디와이산업개발 슈팅 게임', canvas.width / 2, canvas.height / 2 - 45);
             ctx.fillStyle = '#888';
             ctx.shadowBlur = 0;
-            ctx.font = '14px Courier New';
-            ctx.fillText('← → : 이동  |  SPACE : 발사', canvas.width / 2, canvas.height / 2);
-            ctx.fillText('Z / X / C : 스킬', canvas.width / 2, canvas.height / 2 + 22);
+            ctx.font = '13px Courier New';
+            if (isTouchDevice) {
+                ctx.fillText('하단 버튼으로 조작', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('◀▶ 이동 | FIRE 발사 | Z X C 스킬', canvas.width / 2, canvas.height / 2 + 22);
+            } else {
+                ctx.fillText('← → : 이동  |  SPACE : 발사', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('Z / X / C : 스킬  |  F : 전체화면', canvas.width / 2, canvas.height / 2 + 22);
+            }
             ctx.fillStyle = '#ff0';
             ctx.shadowColor = '#ff0';
             ctx.shadowBlur = 10;
-            ctx.font = 'bold 20px Courier New';
+            ctx.font = 'bold 22px Courier New';
             const blinkAlpha = Math.sin(Date.now() / 300) > 0 ? 1 : 0.3;
             ctx.globalAlpha = blinkAlpha;
-            ctx.fillText('CLICK or SPACE', canvas.width / 2, canvas.height / 2 + 80);
+            ctx.fillText(isTouchDevice ? '▶ TAP TO START ◀' : 'CLICK or SPACE', canvas.width / 2, canvas.height / 2 + 80);
             ctx.globalAlpha = 1;
             ctx.restore();
         }
@@ -793,19 +862,19 @@
             ctx.fillStyle = '#f0f';
             ctx.shadowColor = '#f0f';
             ctx.shadowBlur = 20;
-            ctx.font = 'bold 28px Courier New';
-            ctx.fillText('캐릭터 선택', canvas.width / 2, 50);
+            ctx.font = 'bold 26px Courier New';
+            ctx.fillText('캐릭터 선택', canvas.width / 2, 45);
             ctx.fillStyle = '#888';
             ctx.shadowBlur = 0;
-            ctx.font = '14px Courier New';
-            ctx.fillText('디와이산업개발 특수부대', canvas.width / 2, 75);
+            ctx.font = '12px Courier New';
+            ctx.fillText('디와이산업개발 특수부대', canvas.width / 2, 65);
 
             const cardWidth = 140;
-            const cardHeight = 420;
+            const cardHeight = 400;
             const gap = 10;
             const totalWidth = cardWidth * 3 + gap * 2;
             const startX = (canvas.width - totalWidth) / 2;
-            const cardY = 95;
+            const cardY = 80;
             selectAnimTimer += 0.03;
 
             CHARACTER_KEYS.forEach((key, i) => {
@@ -831,61 +900,65 @@
                 ctx.fillStyle = charData.color;
                 ctx.shadowColor = charData.color;
                 ctx.shadowBlur = isSelected ? 15 : 5;
-                ctx.font = isSelected ? 'bold 18px Courier New' : '16px Courier New';
+                ctx.font = isSelected ? 'bold 17px Courier New' : '15px Courier New';
                 ctx.textAlign = 'center';
-                ctx.fillText(charData.name, cx, cy + 25);
+                ctx.fillText(charData.name, cx, cy + 22);
                 ctx.fillStyle = '#aaa'; ctx.shadowBlur = 0;
-                ctx.font = '11px Courier New';
-                ctx.fillText(charData.nameEn, cx, cy + 40);
+                ctx.font = '10px Courier New';
+                ctx.fillText(charData.nameEn, cx, cy + 36);
                 ctx.fillStyle = charData.color;
-                ctx.font = '12px Courier New';
-                ctx.fillText(charData.role, cx, cy + 58);
+                ctx.font = '11px Courier New';
+                ctx.fillText(charData.role, cx, cy + 52);
 
                 const previewScale = isSelected ? 1.3 + Math.sin(selectAnimTimer * 2) * 0.1 : 1.0;
                 ctx.save();
                 ctx.scale(previewScale, previewScale);
-                drawCharacter(ctx, key, cx / previewScale, (cy + 110) / previewScale, 40, 40, charData.color, Math.random() * 5);
+                drawCharacter(ctx, key, cx / previewScale, (cy + 100) / previewScale, 40, 40, charData.color, Math.random() * 5);
                 ctx.restore();
 
-                const statY = cy + 160;
+                const statY = cy + 145;
                 const statLabels = ['속도', '공격', '체력'];
                 const statValues = [charData.speed, charData.attack, charData.health];
                 const statMax = [7, 3, 4];
                 const statColors = ['#0f0', '#f80', '#f00'];
                 statLabels.forEach((label, si) => {
-                    const sy = statY + si * 28;
-                    ctx.fillStyle = '#888'; ctx.font = '11px Courier New'; ctx.textAlign = 'left';
-                    ctx.fillText(label, cx - cardWidth / 2 + 8, sy + 4);
-                    const barX = cx - cardWidth / 2 + 45;
-                    const barW = cardWidth - 55;
+                    const sy = statY + si * 25;
+                    ctx.fillStyle = '#888'; ctx.font = '10px Courier New'; ctx.textAlign = 'left';
+                    ctx.fillText(label, cx - cardWidth / 2 + 6, sy + 4);
+                    const barX = cx - cardWidth / 2 + 40;
+                    const barW = cardWidth - 48;
                     ctx.fillStyle = 'rgba(255,255,255,0.1)';
-                    ctx.fillRect(barX, sy - 6, barW, 10);
+                    ctx.fillRect(barX, sy - 5, barW, 9);
                     ctx.fillStyle = statColors[si];
                     ctx.shadowColor = statColors[si]; ctx.shadowBlur = isSelected ? 8 : 3;
-                    ctx.fillRect(barX, sy - 6, (statValues[si] / statMax[si]) * barW, 10);
+                    ctx.fillRect(barX, sy - 5, (statValues[si] / statMax[si]) * barW, 9);
                     ctx.shadowBlur = 0;
                 });
 
-                const skillY = statY + 100;
-                ctx.fillStyle = charData.color; ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center';
+                const skillY = statY + 88;
+                ctx.fillStyle = charData.color; ctx.font = 'bold 10px Courier New'; ctx.textAlign = 'center';
                 ctx.fillText('— 스킬 —', cx, skillY);
                 charData.skills.forEach((skill, si) => {
-                    const sy = skillY + 20 + si * 50;
-                    ctx.fillStyle = '#ff0'; ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'center';
+                    const sy = skillY + 18 + si * 42;
+                    ctx.fillStyle = '#ff0'; ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center';
                     ctx.fillText(`[${skill.key}]`, cx, sy);
-                    ctx.fillStyle = charData.color; ctx.font = '11px Courier New';
-                    ctx.fillText(skill.name, cx, sy + 15);
-                    ctx.fillStyle = '#888'; ctx.font = '10px Courier New';
-                    ctx.fillText(skill.desc, cx, sy + 28);
+                    ctx.fillStyle = charData.color; ctx.font = '10px Courier New';
+                    ctx.fillText(skill.name, cx, sy + 13);
+                    ctx.fillStyle = '#888'; ctx.font = '9px Courier New';
+                    ctx.fillText(skill.desc, cx, sy + 25);
                 });
             });
 
-            // 하단 안내 - 클릭도 가능 표시
+            // 하단 안내
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ff0'; ctx.shadowColor = '#ff0'; ctx.shadowBlur = 10;
-            ctx.font = '16px Courier New';
+            ctx.font = 'bold 16px Courier New';
             ctx.globalAlpha = Math.sin(Date.now() / 300) > 0 ? 1 : 0.3;
-            ctx.fillText('← → 선택  |  CLICK or SPACE', canvas.width / 2, canvas.height - 25);
+            if (isTouchDevice) {
+                ctx.fillText('캐릭터를 탭하세요!', canvas.width / 2, canvas.height - 20);
+            } else {
+                ctx.fillText('← → 선택  |  SPACE 확정', canvas.width / 2, canvas.height - 20);
+            }
             ctx.globalAlpha = 1;
             ctx.restore();
         }
@@ -896,16 +969,16 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#f0f'; ctx.shadowColor = '#f0f'; ctx.shadowBlur = 30;
-            ctx.font = 'bold 48px Courier New';
+            ctx.font = 'bold 44px Courier New';
             ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 60);
             ctx.fillStyle = '#0ff'; ctx.shadowColor = '#0ff'; ctx.shadowBlur = 10;
-            ctx.font = '24px Courier New';
+            ctx.font = '22px Courier New';
             ctx.fillText(`최종 점수: ${score}`, canvas.width / 2, canvas.height / 2 - 10);
             ctx.fillText(`최고 기록: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
             ctx.fillStyle = '#ff0'; ctx.shadowColor = '#ff0';
             ctx.font = 'bold 18px Courier New';
             ctx.globalAlpha = Math.sin(Date.now() / 300) > 0 ? 1 : 0.3;
-            ctx.fillText('CLICK or SPACE', canvas.width / 2, canvas.height / 2 + 80);
+            ctx.fillText(isTouchDevice ? '▶ TAP TO RETRY ◀' : 'CLICK or SPACE', canvas.width / 2, canvas.height / 2 + 80);
             ctx.globalAlpha = 1;
             ctx.restore();
         }
@@ -916,10 +989,10 @@
         function drawSkillUI() {
             if (!selectedChar) return;
             const charData = CHARACTERS[selectedChar];
-            const iconSize = 40; const gap = 15;
+            const iconSize = 38; const gap = 12;
             const totalW = 3 * iconSize + 2 * gap;
             const startX = (canvas.width - totalW) / 2;
-            const y = canvas.height - 45;
+            const y = canvas.height - 42;
             ctx.save();
             charData.skills.forEach((skill, i) => {
                 const sx = startX + i * (iconSize + gap);
@@ -934,15 +1007,15 @@
                 ctx.strokeRect(sx, y, iconSize, iconSize);
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = isReady ? '#ff0' : '#666';
-                ctx.font = 'bold 14px Courier New'; ctx.textAlign = 'center';
-                ctx.fillText(skill.key, sx + iconSize / 2, y + 16);
+                ctx.font = 'bold 13px Courier New'; ctx.textAlign = 'center';
+                ctx.fillText(skill.key, sx + iconSize / 2, y + 15);
                 ctx.fillStyle = isReady ? charData.color : '#555';
-                ctx.font = '9px Courier New';
-                ctx.fillText(skill.name.substring(0, 4), sx + iconSize / 2, y + 30);
+                ctx.font = '8px Courier New';
+                ctx.fillText(skill.name.substring(0, 4), sx + iconSize / 2, y + 28);
                 if (!isReady && !isAct) {
                     ctx.fillStyle = 'rgba(0,0,0,0.6)';
                     ctx.fillRect(sx, y, iconSize, iconSize * (cooldownLeft / skill.cooldown));
-                    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'center';
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center';
                     ctx.fillText(Math.ceil(cooldownLeft / 1000) + 's', sx + iconSize / 2, y + iconSize / 2 + 4);
                 }
             });
@@ -1394,9 +1467,7 @@
             if (e.code === 'KeyZ') { e.preventDefault(); keys.z = true; }
             if (e.code === 'KeyX') { e.preventDefault(); keys.x = true; }
             if (e.code === 'KeyC') { e.preventDefault(); keys.c = true; }
-            // F키: 전체화면 토글
             if (e.code === 'KeyF') { e.preventDefault(); toggleFullscreen(); }
-            // 선택 화면 좌우
             if (gameState === 'select') {
                 if (e.code === 'ArrowLeft') selectedCharIndex = (selectedCharIndex - 1 + CHARACTER_KEYS.length) % CHARACTER_KEYS.length;
                 if (e.code === 'ArrowRight') selectedCharIndex = (selectedCharIndex + 1) % CHARACTER_KEYS.length;
@@ -1416,20 +1487,21 @@
             canvas.focus();
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
             const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
 
             if (gameState === 'start' || gameState === 'gameover') {
                 handleAction();
             } else if (gameState === 'select') {
-                // 캐릭터 카드 클릭 감지
                 const cardWidth = 140, gap = 10;
                 const totalWidth = cardWidth * 3 + gap * 2;
                 const startX = (canvas.width - totalWidth) / 2;
+                const cardY = 80, cardHeight = 400;
                 for (let i = 0; i < 3; i++) {
                     const cx = startX + i * (cardWidth + gap);
-                    if (clickX >= cx && clickX <= cx + cardWidth) {
+                    if (clickX >= cx && clickX <= cx + cardWidth && clickY >= cardY && clickY <= cardY + cardHeight) {
                         if (selectedCharIndex === i) {
-                            // 이미 선택된 캐릭터를 다시 클릭 → 확정
                             handleAction();
                         } else {
                             selectedCharIndex = i;
@@ -1437,7 +1509,6 @@
                         return;
                     }
                 }
-                // 카드 외 영역 클릭 → 확정
                 handleAction();
             }
         });
@@ -1450,18 +1521,22 @@
             if (!btn) return;
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 keys[keyName] = true;
                 btn.classList.add('pressed');
-                // 상태 전환도 처리
                 if (keyName === 'space') handleAction();
             }, { passive: false });
             btn.addEventListener('touchend', (e) => {
                 e.preventDefault();
-                if (isToggle) {
-                    // 스킬은 원샷이므로 keydown에서 false 처리됨
-                } else {
+                e.stopPropagation();
+                if (!isToggle) {
                     keys[keyName] = false;
                 }
+                btn.classList.remove('pressed');
+            }, { passive: false });
+            // touchcancel도 처리 (손가락이 버튼 밖으로 나갈 때)
+            btn.addEventListener('touchcancel', (e) => {
+                keys[keyName] = false;
                 btn.classList.remove('pressed');
             }, { passive: false });
         }
@@ -1482,13 +1557,16 @@
             } else if (gameState === 'select') {
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
                 const touchX = (e.touches[0].clientX - rect.left) * scaleX;
+                const touchY = (e.touches[0].clientY - rect.top) * scaleY;
                 const cardWidth = 140, gap = 10;
                 const totalWidth = cardWidth * 3 + gap * 2;
                 const startX = (canvas.width - totalWidth) / 2;
+                const cardY2 = 80, cardHeight2 = 400;
                 for (let i = 0; i < 3; i++) {
                     const cx = startX + i * (cardWidth + gap);
-                    if (touchX >= cx && touchX <= cx + cardWidth) {
+                    if (touchX >= cx && touchX <= cx + cardWidth && touchY >= cardY2 && touchY <= cardY2 + cardHeight2) {
                         if (selectedCharIndex === i) { handleAction(); }
                         else { selectedCharIndex = i; }
                         return;
@@ -1497,6 +1575,24 @@
                 handleAction();
             }
         }, { passive: false });
+
+        // 모바일 자동 전체화면 제안 (첫 터치에)
+        if (isTouchDevice) {
+            let fullscreenPrompted = false;
+            document.addEventListener('touchstart', function promptFS() {
+                if (!fullscreenPrompted && !document.fullscreenElement && !document.webkitFullscreenElement) {
+                    fullscreenPrompted = true;
+                    // 약간의 지연 후 전체화면 시도 (유저 제스처 내)
+                    setTimeout(() => {
+                        const el = document.documentElement;
+                        if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+                        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+                        setTimeout(resizeCanvas, 300);
+                    }, 100);
+                    document.removeEventListener('touchstart', promptFS);
+                }
+            }, { passive: true });
+        }
 
         // ========================================
         // 초기화

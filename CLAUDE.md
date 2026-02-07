@@ -136,6 +136,18 @@ git add . && git commit -m "메시지" && git push origin main
 - 수정 후 반드시: `firebase deploy` + `git push`
 
 ## 변경 이력
+- 2026-02-07: 모바일 전면 대응 리빌드
+  - 캔버스 자동 리사이즈 (화면 크기에 맞게 CSS 스케일링, 내부 480x640 유지)
+  - 터치 컨트롤 하단 고정 바 (◀ ▶ 64px, FIRE 80px, Z/X/C 52px)
+  - 터치 디바이스 자동 감지 (ontouchstart + maxTouchPoints + UA)
+  - 첫 터치 시 자동 전체화면 진입
+  - 가로모드 경고 화면 (세로 모드 전환 안내)
+  - 100dvh 적용 (모바일 주소창 대응)
+  - safe-area-inset 대응 (노치/홈바 영역)
+  - touchcancel 처리 (버튼 밖으로 나갈 때)
+  - 모바일/PC 분기 안내 텍스트 (TAP TO START / CLICK or SPACE)
+  - 전체화면 시 document.documentElement 사용 (컨트롤 포함)
+  - resize + orientationchange 이벤트 리사이즈
 - 2026-02-07: 클릭/터치/전체화면 대응 업데이트
   - 마우스 클릭으로 모든 화면 조작 가능 (시작/선택/게임오버)
   - 모바일 터치 컨트롤 추가 (◀ ▶ 방향, FIRE, Z/X/C 스킬 버튼)
