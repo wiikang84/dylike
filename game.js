@@ -164,9 +164,12 @@ const WEAPONS = {
     detector: { name: '오염측정기', icon: '📡', desc: '연쇄 번개 공격', baseDamage: 15, baseCooldown: 1200, chainCount: 3, chainRange: 150, maxLevel: 99 },
     gloves: { name: '보호장갑', icon: '🧤', desc: '빠른 펀치 공격', baseDamage: 12, baseCooldown: 200, range: 60, angle: 120, maxLevel: 99 },
     spray: { name: '소독스프레이', icon: '🧴', desc: '정화 영역 생성', baseDamage: 3, baseCooldown: 3000, radius: 80, duration: 5000, maxLevel: 99 },
-    cone: { name: '안전콘 터렛', icon: '🔶', desc: '터렛 설치, 미사일 발사', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },
-    truck: { name: '미니탱크', icon: '🚛', desc: '탱크 소환, 포격 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },
-    drone: { name: '공격드론', icon: '🚁', desc: '드론 소환, 유도탄 발사', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 99 },
+    // cone: { name: '안전콘 터렛', icon: '🔶', desc: '터렛 설치, 미사일 발사', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },  // 기존 (소환 방식)
+    cone: { name: '화염탄', icon: '🔶', desc: '폭발탄 발사, 범위 데미지', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },
+    // truck: { name: '미니탱크', icon: '🚛', desc: '탱크 소환, 포격 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },  // 기존 (소환 방식)
+    truck: { name: '충격파', icon: '🚛', desc: '주변 충격파, 넉백 효과', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },
+    // drone: { name: '공격드론', icon: '🚁', desc: '드론 소환, 유도탄 발사', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 99 },  // 기존 (소환 방식)
+    drone: { name: '공습', icon: '🚁', desc: '적 다수에게 낙뢰 공격', baseDamage: 25, baseCooldown: 3000, orbitRadius: 150, maxLevel: 99 },
     pipe: { name: '폐수파이프', icon: '🔧', desc: '관통 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 99 }
 };
 
@@ -4180,14 +4183,53 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    // ★★★ 터렛 - 하이브리드 스타일 (깔끔한 본체 + 화려한 이펙트) ★★★
+    // ★★★ 화염탄 - 캐릭터 직접 발사 + 범위 폭발 (A방식) ★★★
+    // 기존 터렛 소환 코드 → 성능 문제로 교체 (2026-02-07)
     fireCone(lv, dmgBonus, areaBonus) {
-        if (this.activeSummons >= 2) return;  // 성능 최적화: 동시 소환 최대 2개
-        this.activeSummons++;
+        const target = this.findClosestEnemy();
+        if (!target) return;
+
         const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.25) * dmgBonus;
-        const duration = 5000 + lv * 500;
-        const attackCooldown = Math.max(300, 500 - lv * 20);
-        const attackRange = 200 + lv * 20;
+        const blastRadius = (50 + lv * 8) * (1 + (areaBonus - 1) * 0.5);
+        const px = this.player.x, py = this.player.y;
+        const targetX = target.x, targetY = target.y;
+        const angle = Math.atan2(targetY - py, targetX - px);
+        const count = 1 + Math.floor(lv / 3);  // 레벨 3마다 폭발탄 +1
+
+        for (let i = 0; i < count; i++) {
+            const spreadAngle = angle + (i - (count - 1) / 2) * 0.3;
+            const dist = Math.sqrt((targetX - px) * (targetX - px) + (targetY - py) * (targetY - py));
+            const bx = px + Math.cos(spreadAngle) * dist;
+            const by = py + Math.sin(spreadAngle) * dist;
+
+            // 폭발탄 발사
+            const bomb = this.add.circle(px, py, 6, 0xff6f00, 0.9).setDepth(11);
+            this.tweens.add({
+                targets: bomb,
+                x: bx, y: by,
+                duration: 250,
+                ease: 'Quad.easeIn',
+                onComplete: () => {
+                    const boomX = bomb.x, boomY = bomb.y;
+                    // 폭발 이펙트 (경량)
+                    const boom = this.add.circle(boomX, boomY, 15, 0xff5722, 0.7).setDepth(10);
+                    this.tweens.add({ targets: boom, scale: blastRadius / 15, alpha: 0, duration: 250, onComplete: () => boom.destroy() });
+                    // 범위 데미지
+                    const rSq = blastRadius * blastRadius;
+                    this.enemies.children.each(e => {
+                        if (!e.active) return;
+                        const dx = e.x - boomX, dy = e.y - boomY;
+                        if (dx * dx + dy * dy <= rSq) {
+                            this.damageEnemy(e, dmg);
+                        }
+                    });
+                    bomb.destroy();
+                }
+            });
+        }
+        return;  // 아래 기존 코드 실행 방지
+
+        /* ========== 기존 터렛 소환 코드 (성능 문제로 비활성화) ==========
 
         // 플레이어 주변 위치
         const angle = Math.random() * Math.PI * 2;
@@ -4376,16 +4418,37 @@ class GameScene extends Phaser.Scene {
                 }
             }
         });
+    ========== 기존 터렛 소환 코드 끝 ========== */
     }
 
-    // ★★★ 미니탱크 - 하이브리드 스타일 ★★★
+    // ★★★ 충격파 - 캐릭터 중심 원형 폭발 (C방식) ★★★
+    // 기존 미니탱크 소환 코드 → 성능 문제로 교체 (2026-02-07)
     fireTruck(lv, dmgBonus) {
-        if (this.activeSummons >= 2) return;  // 성능 최적화: 동시 소환 최대 2개
-        this.activeSummons++;
         const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.25) * dmgBonus;
-        const duration = 6000 + lv * 600;
-        const attackCooldown = Math.max(250, 450 - lv * 20);
-        const attackRange = 180 + lv * 15;
+        const shockRadius = 80 + lv * 12;
+        const px = this.player.x, py = this.player.y;
+
+        // 충격파 이펙트 (원형 확장)
+        const wave = this.add.circle(px, py, 20, 0x4caf50, 0).setStrokeStyle(3, 0x76ff03).setDepth(10);
+        const innerWave = this.add.circle(px, py, 15, 0x66bb6a, 0.3).setDepth(9);
+        this.tweens.add({ targets: wave, scale: shockRadius / 20, alpha: 0, duration: 350, onComplete: () => wave.destroy() });
+        this.tweens.add({ targets: innerWave, scale: shockRadius / 15, alpha: 0, duration: 300, onComplete: () => innerWave.destroy() });
+
+        // 범위 데미지 + 넉백
+        const rSq = shockRadius * shockRadius;
+        this.enemies.children.each(e => {
+            if (!e.active) return;
+            const dx = e.x - px, dy = e.y - py;
+            if (dx * dx + dy * dy <= rSq) {
+                this.damageEnemy(e, dmg);
+                const knockAngle = Math.atan2(dy, dx);
+                e.x += Math.cos(knockAngle) * 25;
+                e.y += Math.sin(knockAngle) * 25;
+            }
+        });
+        return;  // 아래 기존 코드 실행 방지
+
+        /* ========== 기존 미니탱크 소환 코드 (성능 문제로 비활성화) ==========
 
         const angle = Math.random() * Math.PI * 2;
         const dist = 70 + Math.random() * 30;
@@ -4566,16 +4629,47 @@ class GameScene extends Phaser.Scene {
                 }
             }
         });
+    ========== 기존 미니탱크 소환 코드 끝 ========== */
     }
 
-    // ★★★ 공격드론 - 하이브리드 스타일 ★★★
+    // ★★★ 공습 - 적 다수에게 낙뢰 (C방식) ★★★
+    // 기존 드론 소환 코드 → 성능 문제로 교체 (2026-02-07)
     fireDrone(lv, dmgBonus) {
-        if (this.activeSummons >= 2) return;  // 성능 최적화: 동시 소환 최대 2개
-        this.activeSummons++;
         const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.2) * dmgBonus;
-        const duration = 5000 + lv * 500;
-        const attackCooldown = Math.max(200, 350 - lv * 15);
-        const attackRange = 160 + lv * 15;
+        const targetCount = Math.min(3 + Math.floor(lv / 2), 8);
+        const px = this.player.x, py = this.player.y;
+
+        // 범위 내 적들 찾기 (거리순 정렬)
+        const targets = [];
+        this.enemies.children.each(e => {
+            if (!e.active) return;
+            const dx = e.x - px, dy = e.y - py;
+            const distSq = dx * dx + dy * dy;
+            if (distSq <= 250000) {  // 반경 500 이내
+                targets.push({ enemy: e, distSq: distSq });
+            }
+        });
+        if (targets.length === 0) return;
+
+        targets.sort((a, b) => a.distSq - b.distSq);
+        const selected = targets.slice(0, targetCount);
+
+        // 낙뢰 이펙트 (시간차 발동)
+        selected.forEach((t, i) => {
+            this.time.delayedCall(i * 60, () => {
+                const e = t.enemy;
+                if (!e.active) return;
+                // 번개 라인 (위에서 아래로)
+                const lightning = this.add.rectangle(e.x, e.y - 80, 3, 160, 0x00e5ff, 0.8).setDepth(11);
+                const flash = this.add.circle(e.x, e.y, 12, 0x00e5ff, 0.6).setDepth(10);
+                this.tweens.add({ targets: lightning, alpha: 0, scaleX: 0.3, duration: 150, onComplete: () => lightning.destroy() });
+                this.tweens.add({ targets: flash, scale: 2, alpha: 0, duration: 200, onComplete: () => flash.destroy() });
+                this.damageEnemy(e, dmg);
+            });
+        });
+        return;  // 아래 기존 코드 실행 방지
+
+        /* ========== 기존 드론 소환 코드 (성능 문제로 비활성화) ==========
 
         const hoverOffset = { x: Phaser.Math.Between(-40, 40), y: -60 };
         const summonX = this.player.x + hoverOffset.x;
@@ -4773,6 +4867,7 @@ class GameScene extends Phaser.Scene {
                 }
             }
         });
+    ========== 기존 드론 소환 코드 끝 ========== */
     }
 
     // ★ 폐수파이프 - 관통 투사체
