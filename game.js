@@ -270,7 +270,7 @@ const SYNERGIES = [
 const CLASS_TYPES = {
     washer: {
         name: '준설공',
-        icon: '🪣',
+        icon: '🚿',
         desc: 'HP +20%, 물 공격 데미지 +30%',
         color: 0x00bcd4,
         bonus: { hpBonus: 0.20, waterDamage: 0.30 },
@@ -2806,6 +2806,7 @@ class GameScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.items, this.onCollectItem, null, this);
 
         this.weaponTimers = { waterGun: 0, homingMissile: 0, dredgeHose: 0 };
+        this.activeSummons = 0;  // 성능 최적화: 동시 소환 제한 (최대 2)
         this.fieldAngle = 0;
 
         // 파티클
@@ -4181,6 +4182,8 @@ class GameScene extends Phaser.Scene {
 
     // ★★★ 터렛 - 하이브리드 스타일 (깔끔한 본체 + 화려한 이펙트) ★★★
     fireCone(lv, dmgBonus, areaBonus) {
+        if (this.activeSummons >= 2) return;  // 성능 최적화: 동시 소환 최대 2개
+        this.activeSummons++;
         const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.25) * dmgBonus;
         const duration = 5000 + lv * 500;
         const attackCooldown = Math.max(300, 500 - lv * 20);
@@ -4246,10 +4249,10 @@ class GameScene extends Phaser.Scene {
         let currentAngle = 0;
 
         const attackInterval = this.time.addEvent({
-            delay: 50,
+            delay: 100,  // 성능 최적화: 50→100ms
             repeat: -1,
             callback: () => {
-                elapsed += 50;
+                elapsed += 100;
 
                 // 플레이어 따라다니기
                 turretContainer.x = this.player.x + offsetX;
@@ -4266,13 +4269,13 @@ class GameScene extends Phaser.Scene {
 
                 // 가장 가까운 적 찾아서 포신 회전
                 let target = null;
-                let closestDist = attackRange;
+                let closestDistSq = attackRange * attackRange;  // 성능 최적화: sqrt 제거
                 this.enemies.children.each(e => {
                     if (!e.active) return;
                     const dx = e.x - turretContainer.x, dy = e.y - turretContainer.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < closestDist) {
-                        closestDist = dist;
+                    const distSq = dx*dx + dy*dy;
+                    if (distSq < closestDistSq) {
+                        closestDistSq = distSq;
                         target = e;
                     }
                 });
@@ -4304,10 +4307,10 @@ class GameScene extends Phaser.Scene {
 
                     const targetX = target.x, targetY = target.y;
 
-                    // 미사일 트레일
+                    // 미사일 트레일 (성능 최적화: 7→3개, 30→60ms)
                     const trailTimer = this.time.addEvent({
-                        delay: 30,
-                        repeat: 6,
+                        delay: 60,
+                        repeat: 2,
                         callback: () => {
                             const trail = this.add.circle(missile.x, missile.y, 4, 0xff8f00, 0.6).setDepth(10);
                             this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 150, onComplete: () => trail.destroy() });
@@ -4324,19 +4327,20 @@ class GameScene extends Phaser.Scene {
                             trailTimer.remove();
                             // ★ 폭발 이펙트 (다중 레이어)
                             const boomX = missile.x, boomY = missile.y;
+                            // 성능 최적화: 폭발 3레이어→2레이어
                             const ring = this.add.circle(boomX, boomY, 10, 0xffffff, 0).setStrokeStyle(3, 0xffeb3b).setDepth(10);
                             const boom1 = this.add.circle(boomX, boomY, 15, 0xff5722, 0.8).setDepth(10);
-                            const boom2 = this.add.circle(boomX, boomY, 25, 0xff8f00, 0.4).setDepth(9);
+                            // const boom2 = this.add.circle(boomX, boomY, 25, 0xff8f00, 0.4).setDepth(9);
 
                             this.tweens.add({ targets: ring, scale: 3, alpha: 0, duration: 200, onComplete: () => ring.destroy() });
                             this.tweens.add({ targets: boom1, scale: 2, alpha: 0, duration: 150, onComplete: () => boom1.destroy() });
-                            this.tweens.add({ targets: boom2, scale: 2.5, alpha: 0, duration: 200, onComplete: () => boom2.destroy() });
+                            // this.tweens.add({ targets: boom2, scale: 2.5, alpha: 0, duration: 200, onComplete: () => boom2.destroy() });
 
                             // 범위 데미지
                             this.enemies.children.each(e => {
                                 if (!e.active) return;
                                 const dx = e.x - boomX, dy = e.y - boomY;
-                                if (Math.sqrt(dx*dx + dy*dy) <= 35) {
+                                if (dx*dx + dy*dy <= 1225) {  // 성능 최적화: sqrt 제거 (35*35=1225)
                                     this.damageEnemy(e, dmg);
                                 }
                             });
@@ -4348,10 +4352,11 @@ class GameScene extends Phaser.Scene {
                 // 지속시간 끝 - 퇴장 이펙트
                 if (elapsed >= duration) {
                     attackInterval.remove();
+                    this.activeSummons = Math.max(0, this.activeSummons - 1);  // 소환 카운터 감소
                     // 퇴장 파티클
-                    for (let i = 0; i < 8; i++) {
+                    for (let i = 0; i < 4; i++) {  // 성능 최적화: 8→4개
                         const p = this.add.circle(turretContainer.x, turretContainer.y, 4, 0xff6f00, 0.8).setDepth(13);
-                        const pAngle = (i / 8) * Math.PI * 2;
+                        const pAngle = (i / 4) * Math.PI * 2;
                         this.tweens.add({
                             targets: p,
                             x: turretContainer.x + Math.cos(pAngle) * 30,
@@ -4375,6 +4380,8 @@ class GameScene extends Phaser.Scene {
 
     // ★★★ 미니탱크 - 하이브리드 스타일 ★★★
     fireTruck(lv, dmgBonus) {
+        if (this.activeSummons >= 2) return;  // 성능 최적화: 동시 소환 최대 2개
+        this.activeSummons++;
         const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.25) * dmgBonus;
         const duration = 6000 + lv * 600;
         const attackCooldown = Math.max(250, 450 - lv * 20);
@@ -4429,10 +4436,10 @@ class GameScene extends Phaser.Scene {
         let currentAngle = 0;
 
         const attackInterval = this.time.addEvent({
-            delay: 50,
+            delay: 100,  // 성능 최적화: 50→100ms
             repeat: -1,
             callback: () => {
-                elapsed += 50;
+                elapsed += 100;
 
                 tankContainer.x = this.player.x + offsetX;
                 tankContainer.y = this.player.y + offsetY;
@@ -4445,13 +4452,13 @@ class GameScene extends Phaser.Scene {
                 timerBar.width = 42 * (1 - elapsed / duration);
 
                 let target = null;
-                let closestDist = attackRange;
+                let closestDistSq = attackRange * attackRange;  // 성능 최적화: sqrt 제거
                 this.enemies.children.each(e => {
                     if (!e.active) return;
                     const dx = e.x - tankContainer.x, dy = e.y - tankContainer.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < closestDist) {
-                        closestDist = dist;
+                    const distSq = dx*dx + dy*dy;
+                    if (distSq < closestDistSq) {
+                        closestDistSq = distSq;
                         target = e;
                     }
                 });
@@ -4486,10 +4493,10 @@ class GameScene extends Phaser.Scene {
 
                     const targetX = target.x, targetY = target.y;
 
-                    // 포탄 트레일
+                    // 포탄 트레일 (성능 최적화: 8→3개, 25→60ms)
                     const trailTimer = this.time.addEvent({
-                        delay: 25,
-                        repeat: 7,
+                        delay: 60,
+                        repeat: 2,
                         callback: () => {
                             const trail = this.add.circle(shell.x, shell.y, 5, 0xff9800, 0.5).setDepth(10);
                             this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 120, onComplete: () => trail.destroy() });
@@ -4506,23 +4513,23 @@ class GameScene extends Phaser.Scene {
                             trailTimer.remove();
                             const boomX = shell.x, boomY = shell.y;
 
-                            // 대형 폭발
+                            // 대형 폭발 (성능 최적화: 4레이어→2레이어, 카메라 쉐이크 제거)
                             const ring = this.add.circle(boomX, boomY, 15, 0xffffff, 0).setStrokeStyle(4, 0xffeb3b).setDepth(10);
                             const boom1 = this.add.circle(boomX, boomY, 20, 0xff5722, 0.9).setDepth(10);
-                            const boom2 = this.add.circle(boomX, boomY, 35, 0xff8f00, 0.5).setDepth(9);
-                            const boom3 = this.add.circle(boomX, boomY, 50, 0xffcc80, 0.2).setDepth(8);
+                            // const boom2 = this.add.circle(boomX, boomY, 35, 0xff8f00, 0.5).setDepth(9);
+                            // const boom3 = this.add.circle(boomX, boomY, 50, 0xffcc80, 0.2).setDepth(8);
 
                             this.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 250, onComplete: () => ring.destroy() });
                             this.tweens.add({ targets: boom1, scale: 2.5, alpha: 0, duration: 180, onComplete: () => boom1.destroy() });
-                            this.tweens.add({ targets: boom2, scale: 2, alpha: 0, duration: 220, onComplete: () => boom2.destroy() });
-                            this.tweens.add({ targets: boom3, scale: 1.8, alpha: 0, duration: 280, onComplete: () => boom3.destroy() });
+                            // this.tweens.add({ targets: boom2, scale: 2, alpha: 0, duration: 220, onComplete: () => boom2.destroy() });
+                            // this.tweens.add({ targets: boom3, scale: 1.8, alpha: 0, duration: 280, onComplete: () => boom3.destroy() });
 
-                            this.cameras.main.shake(80, 0.008);
+                            // this.cameras.main.shake(80, 0.008);  // 성능 최적화: 카메라 쉐이크 제거
 
                             this.enemies.children.each(e => {
                                 if (!e.active) return;
                                 const dx = e.x - boomX, dy = e.y - boomY;
-                                if (Math.sqrt(dx*dx + dy*dy) <= 45) {
+                                if (dx*dx + dy*dy <= 2025) {  // 성능 최적화: sqrt 제거 (45*45=2025)
                                     this.damageEnemy(e, dmg);
                                     const knockAngle = Math.atan2(e.y - boomY, e.x - boomX);
                                     e.x += Math.cos(knockAngle) * 20;
@@ -4536,9 +4543,10 @@ class GameScene extends Phaser.Scene {
 
                 if (elapsed >= duration) {
                     attackInterval.remove();
-                    for (let i = 0; i < 10; i++) {
+                    this.activeSummons = Math.max(0, this.activeSummons - 1);  // 소환 카운터 감소
+                    for (let i = 0; i < 5; i++) {  // 성능 최적화: 10→5개
                         const p = this.add.circle(tankContainer.x, tankContainer.y, 5, 0x4caf50, 0.8).setDepth(13);
-                        const pAngle = (i / 10) * Math.PI * 2;
+                        const pAngle = (i / 5) * Math.PI * 2;
                         this.tweens.add({
                             targets: p,
                             x: tankContainer.x + Math.cos(pAngle) * 35,
@@ -4562,6 +4570,8 @@ class GameScene extends Phaser.Scene {
 
     // ★★★ 공격드론 - 하이브리드 스타일 ★★★
     fireDrone(lv, dmgBonus) {
+        if (this.activeSummons >= 2) return;  // 성능 최적화: 동시 소환 최대 2개
+        this.activeSummons++;
         const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.2) * dmgBonus;
         const duration = 5000 + lv * 500;
         const attackCooldown = Math.max(200, 350 - lv * 15);
@@ -4638,10 +4648,10 @@ class GameScene extends Phaser.Scene {
         let missileToggle = false;
 
         const attackInterval = this.time.addEvent({
-            delay: 50,
+            delay: 100,  // 성능 최적화: 50→100ms
             repeat: -1,
             callback: () => {
-                elapsed += 50;
+                elapsed += 100;
 
                 // 호버링 모션
                 const wobbleX = Math.sin(elapsed * 0.003) * 5;
@@ -4665,13 +4675,13 @@ class GameScene extends Phaser.Scene {
 
                 if (elapsed - lastAttack >= attackCooldown) {
                     let target = null;
-                    let closestDist = attackRange;
+                    let closestDistSq = attackRange * attackRange;  // 성능 최적화: sqrt 제거
                     this.enemies.children.each(e => {
                         if (!e.active) return;
                         const dx = e.x - droneContainer.x, dy = e.y - droneContainer.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < closestDist) {
-                            closestDist = dist;
+                        const distSq = dx*dx + dy*dy;
+                        if (distSq < closestDistSq) {
+                            closestDistSq = distSq;
                             target = e;
                         }
                     });
@@ -4696,10 +4706,10 @@ class GameScene extends Phaser.Scene {
                         const targetX = target.x, targetY = target.y;
                         missile.rotation = Math.atan2(targetY - launchY, targetX - launchX);
 
-                        // 미사일 트레일
+                        // 미사일 트레일 (성능 최적화: 8→3개, 20→60ms)
                         const trailTimer = this.time.addEvent({
-                            delay: 20,
-                            repeat: 7,
+                            delay: 60,
+                            repeat: 2,
                             callback: () => {
                                 const trail = this.add.circle(missile.x, missile.y, 3, 0x00e5ff, 0.6).setDepth(10);
                                 this.tweens.add({ targets: trail, scale: 0, alpha: 0, duration: 100, onComplete: () => trail.destroy() });
@@ -4716,19 +4726,19 @@ class GameScene extends Phaser.Scene {
                                 trailTimer.remove();
                                 const boomX = missile.x, boomY = missile.y;
 
-                                // 폭발 이펙트
+                                // 폭발 이펙트 (성능 최적화: 3레이어→2레이어)
                                 const ring = this.add.circle(boomX, boomY, 8, 0xffffff, 0).setStrokeStyle(2, 0x00e5ff).setDepth(10);
                                 const boom1 = this.add.circle(boomX, boomY, 12, 0x00e5ff, 0.8).setDepth(10);
-                                const boom2 = this.add.circle(boomX, boomY, 20, 0x00bcd4, 0.4).setDepth(9);
+                                // const boom2 = this.add.circle(boomX, boomY, 20, 0x00bcd4, 0.4).setDepth(9);
 
                                 this.tweens.add({ targets: ring, scale: 2.5, alpha: 0, duration: 150, onComplete: () => ring.destroy() });
                                 this.tweens.add({ targets: boom1, scale: 2, alpha: 0, duration: 120, onComplete: () => boom1.destroy() });
-                                this.tweens.add({ targets: boom2, scale: 2, alpha: 0, duration: 160, onComplete: () => boom2.destroy() });
+                                // this.tweens.add({ targets: boom2, scale: 2, alpha: 0, duration: 160, onComplete: () => boom2.destroy() });
 
                                 this.enemies.children.each(e => {
                                     if (!e.active) return;
                                     const dx = e.x - boomX, dy = e.y - boomY;
-                                    if (Math.sqrt(dx*dx + dy*dy) <= 28) {
+                                    if (dx*dx + dy*dy <= 784) {  // 성능 최적화: sqrt 제거 (28*28=784)
                                         this.damageEnemy(e, dmg);
                                     }
                                 });
@@ -4740,9 +4750,10 @@ class GameScene extends Phaser.Scene {
 
                 if (elapsed >= duration) {
                     attackInterval.remove();
-                    for (let i = 0; i < 6; i++) {
+                    this.activeSummons = Math.max(0, this.activeSummons - 1);  // 소환 카운터 감소
+                    for (let i = 0; i < 3; i++) {  // 성능 최적화: 6→3개
                         const p = this.add.circle(droneContainer.x, droneContainer.y, 4, 0x00bcd4, 0.8).setDepth(13);
-                        const pAngle = (i / 6) * Math.PI * 2;
+                        const pAngle = (i / 3) * Math.PI * 2;
                         this.tweens.add({
                             targets: p,
                             x: droneContainer.x + Math.cos(pAngle) * 25,
