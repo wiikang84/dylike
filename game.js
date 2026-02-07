@@ -269,26 +269,26 @@ const SYNERGIES = [
 // ========== ★ 클래스 시스템 (바벨탑 스타일) ★ ==========
 const CLASS_TYPES = {
     washer: {
-        name: '세척원',
-        icon: '💧',
+        name: '준설공',
+        icon: '🪣',
         desc: 'HP +20%, 물 공격 데미지 +30%',
-        color: 0x1976d2,
+        color: 0x00bcd4,
         bonus: { hpBonus: 0.20, waterDamage: 0.30 },
         startWeapon: 'waterGun'
     },
     purifier: {
-        name: '정화원',
-        icon: '🔮',
+        name: '세정공',
+        icon: '🔫',
         desc: '범위 +25%, 쿨다운 -15%',
-        color: 0x9c27b0,
+        color: 0xff6d00,
         bonus: { areaBonus: 0.25, cooldownBonus: 0.15 },
         startWeapon: 'circleField'
     },
     technician: {
-        name: '기술자',
-        icon: '🔧',
+        name: '신호수',
+        icon: '🚩',
         desc: '크리티컬 +10%, 이동속도 +15%',
-        color: 0xff8f00,
+        color: 0xd32f2f,
         bonus: { critBonus: 0.10, speedBonus: 0.15 },
         startWeapon: 'detector'
     }
@@ -3149,8 +3149,8 @@ class GameScene extends Phaser.Scene {
             projectile: 0,
             lifesteal: 0,
             // ★ 클래스 보너스 추가
-            waterDamage: classBonus.waterDamage || 0,  // 세척원: 물 공격 데미지
-            critBonus: classBonus.critBonus || 0,      // 기술자: 크리티컬 확률
+            waterDamage: classBonus.waterDamage || 0,  // 준설공: 물 공격 데미지
+            critBonus: classBonus.critBonus || 0,      // 신호수: 크리티컬 확률
             // ★ 장비 보너스 추가
             attackSpeed: 0,
             expBonus: 0,
@@ -3158,8 +3158,8 @@ class GameScene extends Phaser.Scene {
         };
 
         // ★ 클래스 보너스 적용
-        if (classBonus.areaBonus) bonus.area += classBonus.areaBonus;       // 정화원: 범위
-        if (classBonus.cooldownBonus) bonus.cooldown += classBonus.cooldownBonus;  // 정화원: 쿨다운
+        if (classBonus.areaBonus) bonus.area += classBonus.areaBonus;       // 세정공: 범위
+        if (classBonus.cooldownBonus) bonus.cooldown += classBonus.cooldownBonus;  // 세정공: 쿨다운
 
         // ★ 장비 보너스 적용
         if (equipBonus.damage) bonus.damage += equipBonus.damage;
@@ -3515,10 +3515,10 @@ class GameScene extends Phaser.Scene {
         const synergyBonus = this.getSynergyBonus();
         const dmgBonus = 1 + (this.playerState.passives.damage || 0) * PASSIVES.damage.effect + synergyBonus.damage;
 
-        // ★ 클래스 보너스: 물 공격 데미지 (세척원 전용)
+        // ★ 클래스 보너스: 물 공격 데미지 (준설공 전용)
         const waterDmgBonus = 1 + (synergyBonus.waterDamage || 0);
 
-        // 고압 세척기 (물 공격 - 세척원 보너스 적용)
+        // 고압 세척기 (물 공격 - 준설공 보너스 적용)
         const wgLv = this.playerState.weapons.waterGun || 0;
         if (wgLv > 0) {
             const cd = WEAPONS.waterGun.baseCooldown * (1 - wgLv * 0.05);
@@ -3538,7 +3538,7 @@ class GameScene extends Phaser.Scene {
             }
         }
 
-        // ★ 준설호스 (물 공격 - 세척원 보너스 적용)
+        // ★ 준설호스 (물 공격 - 준설공 보너스 적용)
         const dhLv = this.playerState.weapons.dredgeHose || 0;
         if (dhLv > 0) {
             const cd = WEAPONS.dredgeHose.baseCooldown;
@@ -3640,7 +3640,7 @@ class GameScene extends Phaser.Scene {
         let finalDamage = baseDamage;
         let isCrit = false;
 
-        // 크리티컬 확률 체크 (+ 기술자 클래스 보너스)
+        // 크리티컬 확률 체크 (+ 신호수 클래스 보너스)
         const synergyBonus = this.getSynergyBonus();
         const critChance = (this.playerState.passives.critChance || 0) * PASSIVES.critChance.effect + (synergyBonus.critBonus || 0);
         if (Math.random() < critChance) {
