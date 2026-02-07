@@ -1,8 +1,8 @@
-# DY라이크 - 디와이산업개발 환경정화 시뮬레이터
+# DYlike - 디와이산업개발 슈팅 게임
 
 ## 프로젝트 정보
-- **게임 타입**: 뱀파이어 서바이버즈 스타일 로그라이크
-- **엔진**: Phaser.js 3.80.1
+- **게임 타입**: 갤러그 스타일 네온 슈팅 게임 (3캐릭터 + 스킬 시스템)
+- **엔진**: 순수 Canvas API (이전: Phaser.js 3.80.1)
 - **배포 URL**: https://dy-like-game.web.app
 - **GitHub**: https://github.com/wiikang84/dylike
 - **Firebase 프로젝트**: dy-like-game
@@ -17,9 +17,9 @@ git add . && git commit -m "메시지" && git push origin main
 ```
 
 ## 주요 파일
-- `index.html` - 메인 HTML
-- `game.js` - 게임 로직 전체 (~4000줄)
-- `style.css` - 스타일시트
+- `index.html` - 게임 전체 (단일 파일, ~1960줄)
+- `game.js` - (구버전 뱀서라이크 게임, 보존용)
+- `style.css` - (구버전 스타일, 보존용)
 - `firebase.json` - Firebase 설정
 - `.firebaserc` - Firebase 프로젝트 연결
 
@@ -136,6 +136,14 @@ git add . && git commit -m "메시지" && git push origin main
 - 수정 후 반드시: `firebase deploy` + `git push`
 
 ## 변경 이력
+- 2026-02-07: 게임 전면 교체 - 갤러그 스타일 슈팅 게임으로 변경
+  - 기존 뱀서라이크(Phaser.js) → 네온 갤러그(Canvas API) 완전 교체
+  - 3캐릭터 시스템: 준설공(탱커)/세정공(딜러)/신호수(지휘관) - 실제 직종 기반
+  - 캐릭터 선택 화면 (스탯 바, 스킬 미리보기, 글로우 애니메이션)
+  - 9개 스킬 시스템 (Z/X/C 키, 쿨다운 UI, 전용 이펙트)
+  - 성능 최적화 (deltaTime 게임루프, 엔티티 상한선, 프리렌더링 캐시)
+  - 캐릭터별 고유 외형 및 엔진 이펙트 (Canvas Path 기반)
+  - 기존 game.js, style.css는 보존용으로 유지
 - 2026-02-06: 비주얼 대폭 개선 (하이브리드 스타일)
   - 터렛/탱크/드론 전면 리디자인 (컨테이너 기반, 레이어 분리)
   - 소환 이펙트 추가 (원형 소환진 + 파티클)

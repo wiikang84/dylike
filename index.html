@@ -2,11 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1a1a2e">
-    <title>DY라이크 - 디와이산업개발 환경정화 시뮬레이터</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DYlike - 디와이산업개발 슈팅 게임</title>
     <style>
         * {
             margin: 0;
@@ -14,105 +11,1950 @@
             box-sizing: border-box;
         }
 
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #0f0f1a;
-        }
-
         body {
+            background: #000;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        #game-container {
-            position: relative;
-            background: #1a1a2e;
-            border-radius: 8px;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
             overflow: hidden;
-            box-shadow: 0 0 40px rgba(0, 168, 232, 0.2);
         }
 
-        #game-container canvas {
-            display: block;
+        .game-container {
+            position: relative;
         }
 
-        /* 모바일 가로모드 안내 */
-        #rotate-message {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0f0f1a;
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: #ffffff;
-            text-align: center;
-            padding: 20px;
+        canvas {
+            border: 2px solid #0ff;
+            box-shadow: 0 0 20px #0ff, 0 0 40px #0ff, inset 0 0 20px rgba(0, 255, 255, 0.1);
         }
 
-        .rotate-icon {
-            font-size: 60px;
-            animation: rotate-phone 1.5s ease-in-out infinite;
-            margin-bottom: 20px;
-        }
-
-        .rotate-text {
+        .ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            color: #0ff;
             font-size: 18px;
-            color: #00a8e8;
-            font-weight: bold;
+            text-shadow: 0 0 10px #0ff;
+            pointer-events: none;
         }
 
-        @keyframes rotate-phone {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(90deg); }
-        }
+        /* 게임오버 및 시작화면은 Canvas 내부로 이동 (select 화면 포함) */
 
-        @media (orientation: portrait) and (max-width: 768px) {
-            #rotate-message { display: flex; }
-            #game-container { display: none; }
-        }
-
-        /* ★ 전체화면 모드 대응 */
-        #game-container:fullscreen,
-        #game-container:-webkit-full-screen {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: none !important;
-            max-height: none !important;
-            border-radius: 0;
-        }
-
-        /* 전체화면일 때 게임 컨테이너 */
-        :fullscreen #game-container,
-        :-webkit-full-screen #game-container {
-            width: 100%;
-            height: 100%;
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
         }
     </style>
 </head>
 <body>
-    <div id="game-container"></div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
 
-    <!-- 가로모드 안내 -->
-    <div id="rotate-message">
-        <div class="rotate-icon">📱</div>
-        <p class="rotate-text">화면을 가로로 돌려주세요</p>
+        <div class="ui">
+            <span id="score">SCORE: 0</span>
+            <span id="lives">LIVES: ♥♥♥</span>
+            <span id="level">LEVEL: 1</span>
+        </div>
     </div>
 
-    <!-- Phaser 3 -->
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-    <script src="game.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const levelEl = document.getElementById('level');
+
+        // ========================================
+        // 1단계: 성능 최적화 - 프리렌더링 시스템
+        // ========================================
+        const glowCache = {};
+        function getGlowSprite(key, width, height, drawFn) {
+            if (glowCache[key]) return glowCache[key];
+            const offCanvas = document.createElement('canvas');
+            // 글로우가 잘리지 않도록 패딩 추가
+            const pad = 30;
+            offCanvas.width = width + pad * 2;
+            offCanvas.height = height + pad * 2;
+            const offCtx = offCanvas.getContext('2d');
+            offCtx.translate(pad, pad);
+            drawFn(offCtx);
+            glowCache[key] = { canvas: offCanvas, pad: pad };
+            return glowCache[key];
+        }
+
+        // 엔티티 상한선 (성능 보호)
+        const LIMITS = {
+            playerBullets: 15,
+            // summonBullets: 10, // 소환유닛 총알 (향후 확장용)
+            enemyBullets: 20,
+            particles: 80,
+            skillEffects: 30
+        };
+
+        // deltaTime 기반 게임 루프
+        let lastTime = 0;
+        let deltaTime = 0;
+
+        // ========================================
+        // 2단계: 캐릭터 데이터 정의
+        // ========================================
+        const CHARACTERS = {
+            dredger: {
+                name: '준설공',
+                nameEn: 'Dredger',
+                role: '탱커/서포터',
+                job: '하수관·집수정 슬러지 제거',
+                color: '#0ff',
+                colorRgb: '0,255,255',
+                speed: 5,
+                attack: 2,
+                health: 4,
+                shootCooldown: 250,
+                skills: [
+                    { name: '슬러지 흡입', nameEn: 'Suction', cooldown: 8000, duration: 2000, key: 'Z',
+                      desc: '전방 부채꼴 적 탄환 흡수' },
+                    { name: '수압포', nameEn: 'Water Cannon', cooldown: 12000, duration: 500, key: 'X',
+                      desc: '전방 관통 물줄기' },
+                    { name: '독가스 방벽', nameEn: 'Gas Shield', cooldown: 15000, duration: 3000, key: 'C',
+                      desc: '3초간 무적 보호막' }
+                ]
+            },
+            cleaner: {
+                name: '세정공',
+                nameEn: 'Cleaner',
+                role: '딜러/공격수',
+                job: '초고압 워터젯 세정',
+                color: '#f80',
+                colorRgb: '255,136,0',
+                speed: 6,
+                attack: 3,
+                health: 3,
+                shootCooldown: 200,
+                skills: [
+                    { name: '하이드로 캐논', nameEn: 'Hydro Cannon', cooldown: 6000, duration: 300, key: 'Z',
+                      desc: '초고압 관통 레이저' },
+                    { name: '스핀 워시', nameEn: 'Spin Wash', cooldown: 10000, duration: 500, key: 'X',
+                      desc: '360도 회전 공격' },
+                    { name: '부식액', nameEn: 'Corrosion', cooldown: 12000, duration: 5000, key: 'C',
+                      desc: '산성 웅덩이 지속 데미지' }
+                ]
+            },
+            signal: {
+                name: '신호수',
+                nameEn: 'Signal Person',
+                role: '지휘관/버퍼',
+                job: '크레인 수신호·위험 경보',
+                color: '#f22',
+                colorRgb: '255,34,34',
+                speed: 7,
+                attack: 1,
+                health: 3,
+                shootCooldown: 300,
+                skills: [
+                    { name: '긴급정지', nameEn: 'Emergency Stop', cooldown: 15000, duration: 2000, key: 'Z',
+                      desc: '모든 적 2초 정지' },
+                    { name: '크레인 투하', nameEn: 'Sky Drop', cooldown: 10000, duration: 800, key: 'X',
+                      desc: '범위 대데미지 낙하' },
+                    { name: '지휘 신호', nameEn: 'Command Signal', cooldown: 12000, duration: 5000, key: 'C',
+                      desc: '속도+30% 발사속도+50%' }
+                ]
+            }
+        };
+
+        const CHARACTER_KEYS = ['dredger', 'cleaner', 'signal'];
+
+        // ========================================
+        // 게임 상태
+        // ========================================
+        let gameState = 'start'; // start, select, playing, gameover
+        let score = 0;
+        let lives = 3;
+        let maxLives = 3;
+        let level = 1;
+        let highScore = localStorage.getItem('galaga-highscore') || 0;
+        let selectedCharIndex = 0;
+        let selectedChar = null; // 선택된 캐릭터 키
+        let selectAnimTimer = 0;
+
+        // 플레이어
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 60,
+            width: 40,
+            height: 40,
+            speed: 6,
+            color: '#0ff',
+            invincible: false,
+            invincibleTimer: 0,
+            buffed: false,
+            buffTimer: 0,
+            buffSpeedMult: 1,
+            buffFireMult: 1
+        };
+
+        // 게임 요소들
+        let bullets = [];
+        let enemies = [];
+        let particles = [];
+        let enemyBullets = [];
+        let stars = [];
+        let skillEffects = []; // 스킬 이펙트 (부식액 웅덩이, 크레인 낙하 등)
+        let enemyStunTimer = 0; // 적 스턴 남은 시간
+
+        // 스킬 쿨다운 상태
+        let skillCooldowns = [0, 0, 0]; // 각 스킬의 남은 쿨다운 (ms)
+        let skillActive = [false, false, false]; // 스킬 활성 여부
+        let skillActiveTimer = [0, 0, 0]; // 활성 스킬 남은 시간
+
+        // 입력 상태
+        const keys = {
+            left: false,
+            right: false,
+            space: false,
+            z: false,
+            x: false,
+            c: false
+        };
+
+        let lastShot = 0;
+
+        // ========================================
+        // 별 배경 초기화
+        // ========================================
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    speed: Math.random() * 2 + 0.5
+                });
+            }
+        }
+
+        // ========================================
+        // 적 생성
+        // ========================================
+        function spawnEnemies() {
+            const rows = Math.min(3 + Math.floor(level / 2), 5);
+            const cols = Math.min(6 + Math.floor(level / 3), 10);
+            const enemyWidth = 35;
+            const enemyHeight = 30;
+            const padding = 10;
+            const startX = (canvas.width - (cols * (enemyWidth + padding))) / 2;
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const type = row === 0 ? 'boss' : (row < 2 ? 'mid' : 'normal');
+                    enemies.push({
+                        x: startX + col * (enemyWidth + padding),
+                        y: 50 + row * (enemyHeight + padding),
+                        width: enemyWidth,
+                        height: enemyHeight,
+                        type: type,
+                        health: type === 'boss' ? 2 + Math.floor(level / 3) : 1,
+                        color: type === 'boss' ? '#f0f' : (type === 'mid' ? '#ff0' : '#0f0'),
+                        moveDir: 1,
+                        moveTimer: 0,
+                        stunned: false
+                    });
+                }
+            }
+        }
+
+        // ========================================
+        // 5단계: 캐릭터 외형 그리기
+        // ========================================
+
+        // 준설공 외형 (넓은 방수복 실루엣)
+        function drawDredger(drawCtx, x, y, w, h, color, engineFlicker) {
+            drawCtx.save();
+            drawCtx.translate(x, y);
+
+            drawCtx.shadowColor = color;
+            drawCtx.shadowBlur = 15;
+
+            // 본체: 넓은 사다리꼴 (방수복)
+            drawCtx.fillStyle = color;
+            drawCtx.beginPath();
+            drawCtx.moveTo(-w * 0.3, -h * 0.35);  // 상단 좌
+            drawCtx.lineTo(w * 0.3, -h * 0.35);   // 상단 우
+            drawCtx.lineTo(w * 0.5, h * 0.3);     // 하단 우
+            drawCtx.lineTo(-w * 0.5, h * 0.3);    // 하단 좌
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // 안전모 + 방독마스크 (상단 둥근 형태)
+            drawCtx.beginPath();
+            drawCtx.arc(0, -h * 0.35, w * 0.25, Math.PI, 0);
+            drawCtx.fill();
+
+            // 방독마스크 디테일 (어두운 부분)
+            drawCtx.fillStyle = '#000';
+            drawCtx.beginPath();
+            drawCtx.arc(0, -h * 0.25, w * 0.12, 0, Math.PI * 2);
+            drawCtx.fill();
+
+            // 바이저 (눈 부분)
+            drawCtx.fillStyle = '#fff';
+            drawCtx.globalAlpha = 0.8;
+            drawCtx.fillRect(-w * 0.18, -h * 0.42, w * 0.36, h * 0.08);
+            drawCtx.globalAlpha = 1;
+
+            // 흡입호스 (좌우 팔)
+            drawCtx.fillStyle = color;
+            drawCtx.fillRect(-w * 0.55, -h * 0.1, w * 0.12, h * 0.35);
+            drawCtx.fillRect(w * 0.43, -h * 0.1, w * 0.12, h * 0.35);
+
+            // 장화 (하단)
+            drawCtx.fillRect(-w * 0.4, h * 0.3, w * 0.3, h * 0.15);
+            drawCtx.fillRect(w * 0.1, h * 0.3, w * 0.3, h * 0.15);
+
+            // 엔진 불꽃: 물방울 이펙트 (시안)
+            drawCtx.fillStyle = '#0ff';
+            drawCtx.shadowColor = '#0ff';
+            drawCtx.globalAlpha = 0.8;
+            const f = engineFlicker || 0;
+            // 중앙 물줄기
+            drawCtx.beginPath();
+            drawCtx.moveTo(-6, h * 0.45);
+            drawCtx.quadraticCurveTo(0, h * 0.45 + 18 + f, 6, h * 0.45);
+            drawCtx.fill();
+            // 좌우 물방울
+            drawCtx.beginPath();
+            drawCtx.arc(-8, h * 0.55 + f * 0.5, 3, 0, Math.PI * 2);
+            drawCtx.fill();
+            drawCtx.beginPath();
+            drawCtx.arc(8, h * 0.52 + f * 0.3, 2, 0, Math.PI * 2);
+            drawCtx.fill();
+            drawCtx.globalAlpha = 1;
+
+            drawCtx.restore();
+        }
+
+        // 세정공 외형 (날카로운 전투복)
+        function drawCleaner(drawCtx, x, y, w, h, color, engineFlicker) {
+            drawCtx.save();
+            drawCtx.translate(x, y);
+
+            drawCtx.shadowColor = color;
+            drawCtx.shadowBlur = 15;
+
+            // 본체: 날카로운 역오각형
+            drawCtx.fillStyle = color;
+            drawCtx.beginPath();
+            drawCtx.moveTo(0, -h * 0.5);          // 상단 중앙 (노즐)
+            drawCtx.lineTo(w * 0.45, -h * 0.15);  // 우측 상단
+            drawCtx.lineTo(w * 0.35, h * 0.35);   // 우측 하단
+            drawCtx.lineTo(-w * 0.35, h * 0.35);  // 좌측 하단
+            drawCtx.lineTo(-w * 0.45, -h * 0.15); // 좌측 상단
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // 안면보호대 (바이저) - 직사각형
+            drawCtx.fillStyle = '#000';
+            drawCtx.fillRect(-w * 0.2, -h * 0.35, w * 0.4, h * 0.15);
+            // 바이저 반사광
+            drawCtx.fillStyle = color;
+            drawCtx.globalAlpha = 0.6;
+            drawCtx.fillRect(-w * 0.15, -h * 0.33, w * 0.3, h * 0.04);
+            drawCtx.globalAlpha = 1;
+
+            // 고압 노즐 돌출 (전방)
+            drawCtx.fillStyle = color;
+            drawCtx.beginPath();
+            drawCtx.moveTo(-3, -h * 0.5);
+            drawCtx.lineTo(0, -h * 0.65);
+            drawCtx.lineTo(3, -h * 0.5);
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // 내부 디테일 (배관 무늬)
+            drawCtx.strokeStyle = '#000';
+            drawCtx.lineWidth = 1.5;
+            drawCtx.beginPath();
+            drawCtx.moveTo(-w * 0.15, 0);
+            drawCtx.lineTo(w * 0.15, 0);
+            drawCtx.stroke();
+            drawCtx.beginPath();
+            drawCtx.moveTo(-w * 0.1, h * 0.12);
+            drawCtx.lineTo(w * 0.1, h * 0.12);
+            drawCtx.stroke();
+
+            // 강철 안전화 (하단)
+            drawCtx.fillStyle = color;
+            drawCtx.fillRect(-w * 0.3, h * 0.35, w * 0.22, h * 0.12);
+            drawCtx.fillRect(w * 0.08, h * 0.35, w * 0.22, h * 0.12);
+
+            // 엔진 불꽃: 고압 증기 이펙트 (오렌지)
+            drawCtx.fillStyle = '#f80';
+            drawCtx.shadowColor = '#f80';
+            drawCtx.globalAlpha = 0.9;
+            const f = engineFlicker || 0;
+            // 중앙 증기
+            drawCtx.beginPath();
+            drawCtx.moveTo(-8, h * 0.47);
+            drawCtx.lineTo(0, h * 0.47 + 20 + f);
+            drawCtx.lineTo(8, h * 0.47);
+            drawCtx.closePath();
+            drawCtx.fill();
+            // 좌우 증기 라인
+            drawCtx.beginPath();
+            drawCtx.moveTo(-12, h * 0.47);
+            drawCtx.lineTo(-5, h * 0.47 + 10 + f * 0.7);
+            drawCtx.lineTo(-3, h * 0.47);
+            drawCtx.closePath();
+            drawCtx.fill();
+            drawCtx.beginPath();
+            drawCtx.moveTo(3, h * 0.47);
+            drawCtx.lineTo(5, h * 0.47 + 10 + f * 0.7);
+            drawCtx.lineTo(12, h * 0.47);
+            drawCtx.closePath();
+            drawCtx.fill();
+            drawCtx.globalAlpha = 1;
+
+            drawCtx.restore();
+        }
+
+        // 신호수 외형 (날씬한 실루엣 + 깃발 + 안전모)
+        function drawSignal(drawCtx, x, y, w, h, color, engineFlicker) {
+            drawCtx.save();
+            drawCtx.translate(x, y);
+
+            drawCtx.shadowColor = color;
+            drawCtx.shadowBlur = 15;
+
+            // 본체: 날씬한 삼각형
+            drawCtx.fillStyle = color;
+            drawCtx.beginPath();
+            drawCtx.moveTo(0, -h * 0.3);
+            drawCtx.lineTo(w * 0.3, h * 0.35);
+            drawCtx.lineTo(-w * 0.3, h * 0.35);
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // 형광 조끼 라인 (X 형태)
+            drawCtx.strokeStyle = '#ff0';
+            drawCtx.shadowColor = '#ff0';
+            drawCtx.lineWidth = 2;
+            drawCtx.beginPath();
+            drawCtx.moveTo(-w * 0.2, -h * 0.05);
+            drawCtx.lineTo(w * 0.15, h * 0.2);
+            drawCtx.stroke();
+            drawCtx.beginPath();
+            drawCtx.moveTo(w * 0.2, -h * 0.05);
+            drawCtx.lineTo(-w * 0.15, h * 0.2);
+            drawCtx.stroke();
+
+            // 빨간 안전모 (원형)
+            drawCtx.shadowColor = color;
+            drawCtx.fillStyle = color;
+            drawCtx.beginPath();
+            drawCtx.arc(0, -h * 0.38, w * 0.22, 0, Math.PI * 2);
+            drawCtx.fill();
+            // 안전모 챙
+            drawCtx.fillRect(-w * 0.28, -h * 0.35, w * 0.56, h * 0.06);
+
+            // 깃발 (좌측)
+            drawCtx.fillStyle = '#ff0';
+            drawCtx.shadowColor = '#ff0';
+            // 깃대
+            drawCtx.fillRect(-w * 0.45, -h * 0.5, 2, h * 0.6);
+            // 깃발 삼각형
+            const flagWave = Math.sin(Date.now() / 200) * 3;
+            drawCtx.beginPath();
+            drawCtx.moveTo(-w * 0.43, -h * 0.5);
+            drawCtx.lineTo(-w * 0.43 - 12 + flagWave, -h * 0.4);
+            drawCtx.lineTo(-w * 0.43, -h * 0.3);
+            drawCtx.closePath();
+            drawCtx.fill();
+
+            // 무전기 안테나 (우측)
+            drawCtx.strokeStyle = color;
+            drawCtx.lineWidth = 1.5;
+            drawCtx.beginPath();
+            drawCtx.moveTo(w * 0.35, -h * 0.1);
+            drawCtx.lineTo(w * 0.45, -h * 0.5);
+            drawCtx.stroke();
+            // 안테나 끝 점
+            drawCtx.fillStyle = '#fff';
+            drawCtx.beginPath();
+            drawCtx.arc(w * 0.45, -h * 0.52, 2, 0, Math.PI * 2);
+            drawCtx.fill();
+
+            // 엔진 불꽃: 깃발 펄럭임 이펙트 (빨간)
+            drawCtx.fillStyle = '#f22';
+            drawCtx.shadowColor = '#f22';
+            drawCtx.globalAlpha = 0.8;
+            const f = engineFlicker || 0;
+            // 메인 불꽃
+            drawCtx.beginPath();
+            drawCtx.moveTo(-6, h * 0.35);
+            drawCtx.lineTo(0, h * 0.35 + 15 + f);
+            drawCtx.lineTo(6, h * 0.35);
+            drawCtx.closePath();
+            drawCtx.fill();
+            // 펄럭이는 보조 불꽃
+            const wave = Math.sin(Date.now() / 100) * 4;
+            drawCtx.beginPath();
+            drawCtx.moveTo(-3 + wave, h * 0.4);
+            drawCtx.lineTo(wave, h * 0.4 + 8 + f * 0.5);
+            drawCtx.lineTo(3 + wave, h * 0.4);
+            drawCtx.closePath();
+            drawCtx.fill();
+            drawCtx.globalAlpha = 1;
+
+            drawCtx.restore();
+        }
+
+        // 캐릭터별 그리기 디스패처
+        function drawCharacter(drawCtx, charKey, x, y, w, h, color, engineFlicker) {
+            switch (charKey) {
+                case 'dredger': drawDredger(drawCtx, x, y, w, h, color, engineFlicker); break;
+                case 'cleaner': drawCleaner(drawCtx, x, y, w, h, color, engineFlicker); break;
+                case 'signal': drawSignal(drawCtx, x, y, w, h, color, engineFlicker); break;
+            }
+        }
+
+        // 플레이어 그리기
+        function drawPlayer() {
+            if (!selectedChar) return;
+            const charData = CHARACTERS[selectedChar];
+
+            // 무적 깜빡임
+            if (player.invincible && Math.floor(Date.now() / 100) % 2 === 0) return;
+
+            const flicker = Math.random() * 5;
+            drawCharacter(ctx, selectedChar, player.x, player.y, player.width, player.height, charData.color, flicker);
+
+            // 무적 보호막 표시
+            if (player.invincible) {
+                ctx.save();
+                ctx.strokeStyle = charData.color;
+                ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 100) * 0.2;
+                ctx.lineWidth = 2;
+                ctx.shadowColor = charData.color;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.width * 0.8, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 버프 이펙트 표시
+            if (player.buffed) {
+                ctx.save();
+                ctx.strokeStyle = '#ff0';
+                ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 150) * 0.2;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.width * 0.9, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+        }
+
+        // ========================================
+        // 적 그리기 (기존 유지)
+        // ========================================
+        function drawEnemy(enemy) {
+            ctx.save();
+            ctx.translate(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+
+            // 스턴 시 색상 변경
+            if (enemy.stunned) {
+                ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.3;
+            }
+
+            ctx.shadowColor = enemy.color;
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = enemy.color;
+
+            if (enemy.type === 'boss') {
+                // 보스 적 (다이아몬드 모양)
+                ctx.beginPath();
+                ctx.moveTo(0, -enemy.height / 2);
+                ctx.lineTo(enemy.width / 2, 0);
+                ctx.lineTo(0, enemy.height / 2);
+                ctx.lineTo(-enemy.width / 2, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                // 눈
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(-6, -2, 3, 0, Math.PI * 2);
+                ctx.arc(6, -2, 3, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (enemy.type === 'mid') {
+                // 중간 적 (육각형)
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
+                    const ex = Math.cos(angle) * enemy.width / 2;
+                    const ey = Math.sin(angle) * enemy.height / 2;
+                    if (i === 0) ctx.moveTo(ex, ey);
+                    else ctx.lineTo(ex, ey);
+                }
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // 일반 적 (역삼각형)
+                ctx.beginPath();
+                ctx.moveTo(0, enemy.height / 2);
+                ctx.lineTo(-enemy.width / 2, -enemy.height / 2);
+                ctx.lineTo(enemy.width / 2, -enemy.height / 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // ========================================
+        // 총알 그리기
+        // ========================================
+        function drawBullet(bullet, isEnemy = false) {
+            ctx.save();
+            const bulletColor = isEnemy ? '#f00' : (selectedChar ? CHARACTERS[selectedChar].color : '#0ff');
+            ctx.shadowColor = bulletColor;
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = bulletColor;
+
+            ctx.beginPath();
+            ctx.ellipse(bullet.x, bullet.y, 3, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ========================================
+        // 파티클 효과
+        // ========================================
+        function createExplosion(x, y, color) {
+            if (particles.length >= LIMITS.particles) {
+                particles.splice(0, 15);
+            }
+            const count = Math.min(12, LIMITS.particles - particles.length);
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count;
+                const speed = Math.random() * 4 + 2;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color: color
+                });
+            }
+        }
+
+        // ========================================
+        // 별 배경 그리기
+        // ========================================
+        function drawStars() {
+            stars.forEach(star => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.5})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        // ========================================
+        // 파티클 그리기
+        // ========================================
+        function drawParticles() {
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3 * p.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.03;
+            });
+        }
+
+        // ========================================
+        // 충돌 감지
+        // ========================================
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // 원형 충돌 (스킬용)
+        function checkCircleCollision(cx, cy, radius, rect) {
+            const closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.width));
+            const closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.height));
+            const dx = cx - closestX;
+            const dy = cy - closestY;
+            return (dx * dx + dy * dy) < (radius * radius);
+        }
+
+        // ========================================
+        // 3단계: 캐릭터 선택 화면
+        // ========================================
+        function drawSelectScreen() {
+            // 배경 어두운 오버레이
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 타이틀
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#f0f';
+            ctx.shadowColor = '#f0f';
+            ctx.shadowBlur = 20;
+            ctx.font = 'bold 28px Courier New';
+            ctx.fillText('캐릭터 선택', canvas.width / 2, 50);
+
+            ctx.fillStyle = '#888';
+            ctx.shadowBlur = 0;
+            ctx.font = '14px Courier New';
+            ctx.fillText('디와이산업개발 특수부대', canvas.width / 2, 75);
+
+            // 3캐릭터 나란히 표시
+            const cardWidth = 140;
+            const cardHeight = 420;
+            const gap = 10;
+            const totalWidth = cardWidth * 3 + gap * 2;
+            const startX = (canvas.width - totalWidth) / 2;
+            const cardY = 95;
+
+            selectAnimTimer += 0.03;
+
+            CHARACTER_KEYS.forEach((key, i) => {
+                const charData = CHARACTERS[key];
+                const cx = startX + i * (cardWidth + gap) + cardWidth / 2;
+                const cy = cardY;
+                const isSelected = i === selectedCharIndex;
+
+                // 선택된 캐릭터 글로우 효과
+                if (isSelected) {
+                    const glowSize = 3 + Math.sin(selectAnimTimer * 3) * 2;
+                    ctx.save();
+                    ctx.strokeStyle = charData.color;
+                    ctx.shadowColor = charData.color;
+                    ctx.shadowBlur = 20 + glowSize * 3;
+                    ctx.lineWidth = 2 + glowSize * 0.5;
+                    ctx.strokeRect(cx - cardWidth / 2 - 2, cy - 2, cardWidth + 4, cardHeight + 4);
+                    ctx.restore();
+                }
+
+                // 카드 배경
+                ctx.fillStyle = isSelected ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)';
+                ctx.fillRect(cx - cardWidth / 2, cy, cardWidth, cardHeight);
+
+                // 캐릭터 이름
+                ctx.fillStyle = charData.color;
+                ctx.shadowColor = charData.color;
+                ctx.shadowBlur = isSelected ? 15 : 5;
+                ctx.font = isSelected ? 'bold 18px Courier New' : '16px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(charData.name, cx, cy + 25);
+
+                ctx.fillStyle = '#aaa';
+                ctx.shadowBlur = 0;
+                ctx.font = '11px Courier New';
+                ctx.fillText(charData.nameEn, cx, cy + 40);
+
+                // 역할
+                ctx.fillStyle = charData.color;
+                ctx.font = '12px Courier New';
+                ctx.fillText(charData.role, cx, cy + 58);
+
+                // 캐릭터 외형 미리보기
+                const previewScale = isSelected ? 1.3 + Math.sin(selectAnimTimer * 2) * 0.1 : 1.0;
+                ctx.save();
+                ctx.scale(previewScale, previewScale);
+                const scaledCx = cx / previewScale;
+                const scaledCy = (cy + 110) / previewScale;
+                drawCharacter(ctx, key, scaledCx, scaledCy, 40, 40, charData.color, Math.random() * 5);
+                ctx.restore();
+
+                // 스탯 바
+                const statY = cy + 160;
+                const statLabels = ['속도', '공격', '체력'];
+                const statValues = [charData.speed, charData.attack, charData.health];
+                const statMax = [7, 3, 4];
+                const statColors = ['#0f0', '#f80', '#f00'];
+
+                statLabels.forEach((label, si) => {
+                    const sy = statY + si * 28;
+                    ctx.fillStyle = '#888';
+                    ctx.font = '11px Courier New';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(label, cx - cardWidth / 2 + 8, sy + 4);
+
+                    // 스탯 바 배경
+                    const barX = cx - cardWidth / 2 + 45;
+                    const barW = cardWidth - 55;
+                    const barH = 10;
+                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                    ctx.fillRect(barX, sy - 6, barW, barH);
+
+                    // 스탯 바 채움
+                    const fillW = (statValues[si] / statMax[si]) * barW;
+                    ctx.fillStyle = statColors[si];
+                    ctx.shadowColor = statColors[si];
+                    ctx.shadowBlur = isSelected ? 8 : 3;
+                    ctx.fillRect(barX, sy - 6, fillW, barH);
+                    ctx.shadowBlur = 0;
+                });
+
+                // 스킬 목록
+                const skillY = statY + 100;
+                ctx.fillStyle = charData.color;
+                ctx.font = 'bold 11px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('— 스킬 —', cx, skillY);
+
+                charData.skills.forEach((skill, si) => {
+                    const sy = skillY + 20 + si * 50;
+
+                    // 스킬 키
+                    ctx.fillStyle = '#ff0';
+                    ctx.font = 'bold 12px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`[${skill.key}]`, cx, sy);
+
+                    // 스킬 이름
+                    ctx.fillStyle = charData.color;
+                    ctx.font = '11px Courier New';
+                    ctx.fillText(skill.name, cx, sy + 15);
+
+                    // 스킬 설명
+                    ctx.fillStyle = '#888';
+                    ctx.font = '10px Courier New';
+                    ctx.fillText(skill.desc, cx, sy + 28);
+                });
+            });
+
+            // 하단 안내
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ff0';
+            ctx.shadowColor = '#ff0';
+            ctx.shadowBlur = 10;
+            ctx.font = '16px Courier New';
+            const blinkAlpha = Math.sin(Date.now() / 300) > 0 ? 1 : 0.3;
+            ctx.globalAlpha = blinkAlpha;
+            ctx.fillText('← → 선택  |  SPACE 확정', canvas.width / 2, canvas.height - 25);
+            ctx.globalAlpha = 1;
+
+            ctx.restore();
+        }
+
+        // ========================================
+        // 시작 화면 (Canvas 내부 렌더링)
+        // ========================================
+        function drawStartScreen() {
+            ctx.save();
+            ctx.textAlign = 'center';
+
+            // 타이틀
+            ctx.fillStyle = '#f0f';
+            ctx.shadowColor = '#f0f';
+            ctx.shadowBlur = 30;
+            ctx.font = 'bold 36px Courier New';
+            ctx.fillText('DYlike', canvas.width / 2, canvas.height / 2 - 80);
+
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#0ff';
+            ctx.font = '16px Courier New';
+            ctx.fillText('디와이산업개발 슈팅 게임', canvas.width / 2, canvas.height / 2 - 45);
+
+            // 조작법
+            ctx.fillStyle = '#888';
+            ctx.shadowBlur = 0;
+            ctx.font = '14px Courier New';
+            ctx.fillText('← → : 이동', canvas.width / 2, canvas.height / 2);
+            ctx.fillText('SPACE : 발사', canvas.width / 2, canvas.height / 2 + 20);
+            ctx.fillText('Z / X / C : 스킬', canvas.width / 2, canvas.height / 2 + 40);
+
+            // 시작 안내
+            ctx.fillStyle = '#ff0';
+            ctx.shadowColor = '#ff0';
+            ctx.shadowBlur = 10;
+            ctx.font = '18px Courier New';
+            const blinkAlpha = Math.sin(Date.now() / 300) > 0 ? 1 : 0.3;
+            ctx.globalAlpha = blinkAlpha;
+            ctx.fillText('PRESS SPACE TO START', canvas.width / 2, canvas.height / 2 + 90);
+            ctx.globalAlpha = 1;
+
+            ctx.restore();
+        }
+
+        // ========================================
+        // 게임오버 화면 (Canvas 내부 렌더링)
+        // ========================================
+        function drawGameOverScreen() {
+            ctx.save();
+            ctx.textAlign = 'center';
+
+            // 오버레이
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#f0f';
+            ctx.shadowColor = '#f0f';
+            ctx.shadowBlur = 30;
+            ctx.font = 'bold 48px Courier New';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 60);
+
+            ctx.fillStyle = '#0ff';
+            ctx.shadowColor = '#0ff';
+            ctx.shadowBlur = 10;
+            ctx.font = '24px Courier New';
+            ctx.fillText(`최종 점수: ${score}`, canvas.width / 2, canvas.height / 2 - 10);
+
+            ctx.fillText(`최고 기록: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
+
+            ctx.fillStyle = '#ff0';
+            ctx.shadowColor = '#ff0';
+            ctx.font = '18px Courier New';
+            const blinkAlpha = Math.sin(Date.now() / 300) > 0 ? 1 : 0.3;
+            ctx.globalAlpha = blinkAlpha;
+            ctx.fillText('PRESS SPACE TO RESTART', canvas.width / 2, canvas.height / 2 + 80);
+            ctx.globalAlpha = 1;
+
+            ctx.restore();
+        }
+
+        // ========================================
+        // 4단계: 스킬 시스템
+        // ========================================
+
+        // 스킬 쿨다운 UI 그리기
+        function drawSkillUI() {
+            if (!selectedChar) return;
+            const charData = CHARACTERS[selectedChar];
+            const skillCount = 3;
+            const iconSize = 40;
+            const gap = 15;
+            const totalW = skillCount * iconSize + (skillCount - 1) * gap;
+            const startX = (canvas.width - totalW) / 2;
+            const y = canvas.height - 45;
+
+            ctx.save();
+            charData.skills.forEach((skill, i) => {
+                const sx = startX + i * (iconSize + gap);
+                const cooldownLeft = skillCooldowns[i];
+                const isReady = cooldownLeft <= 0;
+                const isActive = skillActive[i];
+
+                // 아이콘 배경
+                ctx.fillStyle = isActive ? 'rgba(255,255,0,0.3)' : (isReady ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)');
+                ctx.fillRect(sx, y, iconSize, iconSize);
+
+                // 아이콘 테두리
+                ctx.strokeStyle = isActive ? '#ff0' : (isReady ? charData.color : '#555');
+                ctx.lineWidth = isActive ? 2 : 1;
+                if (isReady) {
+                    ctx.shadowColor = charData.color;
+                    ctx.shadowBlur = 8;
+                }
+                ctx.strokeRect(sx, y, iconSize, iconSize);
+                ctx.shadowBlur = 0;
+
+                // 키 표시
+                ctx.fillStyle = isReady ? '#ff0' : '#666';
+                ctx.font = 'bold 14px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(skill.key, sx + iconSize / 2, y + 16);
+
+                // 스킬 이름 (축약)
+                ctx.fillStyle = isReady ? charData.color : '#555';
+                ctx.font = '9px Courier New';
+                ctx.fillText(skill.name.substring(0, 4), sx + iconSize / 2, y + 30);
+
+                // 쿨다운 오버레이
+                if (!isReady && !isActive) {
+                    const maxCd = skill.cooldown;
+                    const ratio = cooldownLeft / maxCd;
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.fillRect(sx, y, iconSize, iconSize * ratio);
+
+                    // 남은 초
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 12px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(Math.ceil(cooldownLeft / 1000) + 's', sx + iconSize / 2, y + iconSize / 2 + 4);
+                }
+            });
+            ctx.restore();
+        }
+
+        // 스킬 발동
+        function activateSkill(skillIndex) {
+            if (!selectedChar) return;
+            if (skillCooldowns[skillIndex] > 0) return;
+            if (skillActive[skillIndex]) return;
+
+            const charData = CHARACTERS[selectedChar];
+            const skill = charData.skills[skillIndex];
+
+            skillActive[skillIndex] = true;
+            skillActiveTimer[skillIndex] = skill.duration;
+            skillCooldowns[skillIndex] = skill.cooldown;
+
+            // 스킬별 즉시 효과
+            executeSkillEffect(selectedChar, skillIndex);
+        }
+
+        // 스킬 이펙트 실행
+        function executeSkillEffect(charKey, skillIndex) {
+            switch (charKey) {
+                case 'dredger':
+                    executeDredgerSkill(skillIndex);
+                    break;
+                case 'cleaner':
+                    executeCleanerSkill(skillIndex);
+                    break;
+                case 'signal':
+                    executeSignalSkill(skillIndex);
+                    break;
+            }
+        }
+
+        // ========================================
+        // 5단계: 스킬 이펙트 구현 - 준설공
+        // ========================================
+        function executeDredgerSkill(index) {
+            switch (index) {
+                case 0: // 슬러지 흡입 - 전방 부채꼴 적 탄환 흡수
+                    // 흡입 이펙트는 update에서 지속적으로 처리
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'suction',
+                            x: player.x,
+                            y: player.y,
+                            timer: 2000,
+                            radius: 120,
+                            angle: Math.PI * 0.6 // 부채꼴 각도
+                        });
+                    }
+                    break;
+                case 1: // 수압포 - 전방 관통 물줄기
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'waterCannon',
+                            x: player.x,
+                            y: player.y,
+                            timer: 500,
+                            width: 30,
+                            damage: 5
+                        });
+                    }
+                    break;
+                case 2: // 독가스 방벽 - 3초 무적
+                    player.invincible = true;
+                    player.invincibleTimer = 3000;
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'gasShield',
+                            x: player.x,
+                            y: player.y,
+                            timer: 3000,
+                            radius: 50
+                        });
+                    }
+                    break;
+            }
+        }
+
+        // ========================================
+        // 스킬 이펙트 구현 - 세정공
+        // ========================================
+        function executeCleanerSkill(index) {
+            switch (index) {
+                case 0: // 하이드로 캐논 - 초고압 관통 레이저
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'hydroCannon',
+                            x: player.x,
+                            y: player.y,
+                            timer: 300,
+                            width: 8,
+                            damage: 8
+                        });
+                    }
+                    break;
+                case 1: // 스핀 워시 - 360도 회전 공격
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'spinWash',
+                            x: player.x,
+                            y: player.y,
+                            timer: 500,
+                            radius: 100,
+                            angle: 0,
+                            damage: 3
+                        });
+                    }
+                    break;
+                case 2: // 부식액 - 지속 데미지 웅덩이
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'corrosion',
+                            x: player.x,
+                            y: player.y - 60,
+                            timer: 5000,
+                            radius: 50,
+                            damage: 1,
+                            damageTimer: 0
+                        });
+                    }
+                    break;
+            }
+        }
+
+        // ========================================
+        // 스킬 이펙트 구현 - 신호수
+        // ========================================
+        function executeSignalSkill(index) {
+            switch (index) {
+                case 0: // 긴급정지 - 모든 적 2초 스턴
+                    enemyStunTimer = 2000;
+                    enemies.forEach(e => e.stunned = true);
+                    // 화면 전체 플래시 이펙트
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'emergencyStop',
+                            timer: 500,
+                            flash: 1
+                        });
+                    }
+                    break;
+                case 1: // 크레인 투하 - 범위 대데미지
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        // 가장 가까운 적 위치 또는 화면 중앙 상단
+                        let targetX = canvas.width / 2;
+                        let targetY = canvas.height / 3;
+                        if (enemies.length > 0) {
+                            // 적 밀집 지역 찾기
+                            let bestX = 0, bestY = 0, bestCount = 0;
+                            enemies.forEach(e => {
+                                let count = 0;
+                                enemies.forEach(e2 => {
+                                    const dx = (e.x + e.width/2) - (e2.x + e2.width/2);
+                                    const dy = (e.y + e.height/2) - (e2.y + e2.height/2);
+                                    if (dx*dx + dy*dy < 80*80) count++;
+                                });
+                                if (count > bestCount) {
+                                    bestCount = count;
+                                    bestX = e.x + e.width/2;
+                                    bestY = e.y + e.height/2;
+                                }
+                            });
+                            targetX = bestX;
+                            targetY = bestY;
+                        }
+                        skillEffects.push({
+                            type: 'skyDrop',
+                            x: targetX,
+                            y: 0,
+                            targetY: targetY,
+                            timer: 800,
+                            radius: 70,
+                            damage: 10,
+                            phase: 'falling' // falling -> exploding
+                        });
+                    }
+                    break;
+                case 2: // 지휘 신호 - 자기 버프
+                    player.buffed = true;
+                    player.buffTimer = 5000;
+                    player.buffSpeedMult = 1.3;
+                    player.buffFireMult = 0.5; // 발사 쿨다운 50% 감소 = 발사속도 2배
+                    if (skillEffects.length < LIMITS.skillEffects) {
+                        skillEffects.push({
+                            type: 'commandSignal',
+                            x: player.x,
+                            y: player.y,
+                            timer: 1000,
+                            radius: 60
+                        });
+                    }
+                    break;
+            }
+        }
+
+        // ========================================
+        // 스킬 이펙트 업데이트 & 그리기
+        // ========================================
+        function updateSkillEffects(dt) {
+            for (let i = skillEffects.length - 1; i >= 0; i--) {
+                const fx = skillEffects[i];
+                fx.timer -= dt;
+
+                switch (fx.type) {
+                    case 'suction':
+                        // 슬러지 흡입 - 적 탄환 흡수
+                        fx.x = player.x;
+                        fx.y = player.y;
+                        for (let bi = enemyBullets.length - 1; bi >= 0; bi--) {
+                            const b = enemyBullets[bi];
+                            const dx = b.x - fx.x;
+                            const dy = b.y - fx.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            const angle = Math.atan2(dy, dx);
+                            // 전방 부채꼴 (위쪽 방향)
+                            const relAngle = Math.atan2(-(dy), dx);
+                            if (dist < fx.radius && dy < 0 && Math.abs(relAngle) < fx.angle / 2) {
+                                // 탄환을 플레이어 쪽으로 끌어당김
+                                b.x -= dx * 0.1;
+                                b.y -= dy * 0.1;
+                                if (dist < 20) {
+                                    enemyBullets.splice(bi, 1);
+                                    // 흡수 파티클
+                                    if (particles.length < LIMITS.particles) {
+                                        particles.push({
+                                            x: b.x, y: b.y,
+                                            vx: (Math.random() - 0.5) * 2,
+                                            vy: -Math.random() * 2,
+                                            life: 0.5,
+                                            color: '#0ff'
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'waterCannon':
+                        // 수압포 - 전방 관통
+                        fx.x = player.x;
+                        for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                            const e = enemies[ei];
+                            const ecx = e.x + e.width / 2;
+                            if (Math.abs(ecx - fx.x) < fx.width / 2 + e.width / 2 && e.y < player.y) {
+                                e.health -= fx.damage * dt / 500;
+                                if (e.health <= 0) {
+                                    createExplosion(ecx, e.y + e.height / 2, e.color);
+                                    enemies.splice(ei, 1);
+                                    score += e.type === 'boss' ? 100 : (e.type === 'mid' ? 50 : 20);
+                                    updateUI();
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'gasShield':
+                        fx.x = player.x;
+                        fx.y = player.y;
+                        break;
+
+                    case 'hydroCannon':
+                        fx.x = player.x;
+                        for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                            const e = enemies[ei];
+                            const ecx = e.x + e.width / 2;
+                            if (Math.abs(ecx - fx.x) < fx.width + e.width / 2 && e.y < player.y) {
+                                e.health -= fx.damage * dt / 300;
+                                if (e.health <= 0) {
+                                    createExplosion(ecx, e.y + e.height / 2, e.color);
+                                    enemies.splice(ei, 1);
+                                    score += e.type === 'boss' ? 100 : (e.type === 'mid' ? 50 : 20);
+                                    updateUI();
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'spinWash':
+                        fx.x = player.x;
+                        fx.y = player.y;
+                        fx.angle += dt * 0.015;
+                        for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                            const e = enemies[ei];
+                            const ecx = e.x + e.width / 2;
+                            const ecy = e.y + e.height / 2;
+                            if (checkCircleCollision(fx.x, fx.y, fx.radius, { x: e.x, y: e.y, width: e.width, height: e.height })) {
+                                e.health -= fx.damage * dt / 500;
+                                if (e.health <= 0) {
+                                    createExplosion(ecx, ecy, e.color);
+                                    enemies.splice(ei, 1);
+                                    score += e.type === 'boss' ? 100 : (e.type === 'mid' ? 50 : 20);
+                                    updateUI();
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'corrosion':
+                        fx.damageTimer -= dt;
+                        if (fx.damageTimer <= 0) {
+                            fx.damageTimer = 500; // 0.5초마다 데미지
+                            for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                                const e = enemies[ei];
+                                if (checkCircleCollision(fx.x, fx.y, fx.radius, { x: e.x, y: e.y, width: e.width, height: e.height })) {
+                                    e.health -= fx.damage;
+                                    if (e.health <= 0) {
+                                        createExplosion(e.x + e.width/2, e.y + e.height/2, '#0f0');
+                                        enemies.splice(ei, 1);
+                                        score += e.type === 'boss' ? 100 : (e.type === 'mid' ? 50 : 20);
+                                        updateUI();
+                                    }
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'emergencyStop':
+                        fx.flash -= dt / 500;
+                        break;
+
+                    case 'skyDrop':
+                        if (fx.phase === 'falling') {
+                            fx.y += (fx.targetY - fx.y) * 0.15;
+                            if (Math.abs(fx.y - fx.targetY) < 5) {
+                                fx.phase = 'exploding';
+                                // 범위 내 적에게 대데미지
+                                for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                                    const e = enemies[ei];
+                                    if (checkCircleCollision(fx.x, fx.y, fx.radius, { x: e.x, y: e.y, width: e.width, height: e.height })) {
+                                        e.health -= fx.damage;
+                                        if (e.health <= 0) {
+                                            createExplosion(e.x + e.width/2, e.y + e.height/2, '#ff0');
+                                            enemies.splice(ei, 1);
+                                            score += e.type === 'boss' ? 100 : (e.type === 'mid' ? 50 : 20);
+                                            updateUI();
+                                        }
+                                    }
+                                }
+                                // 폭발 파티클
+                                createExplosion(fx.x, fx.y, '#ff0');
+                                createExplosion(fx.x, fx.y, '#f80');
+                            }
+                        }
+                        break;
+
+                    case 'commandSignal':
+                        fx.x = player.x;
+                        fx.y = player.y;
+                        break;
+                }
+
+                if (fx.timer <= 0) {
+                    skillEffects.splice(i, 1);
+                }
+            }
+        }
+
+        function drawSkillEffects() {
+            skillEffects.forEach(fx => {
+                ctx.save();
+
+                switch (fx.type) {
+                    case 'suction':
+                        // 부채꼴 흡입 이펙트
+                        ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 100) * 0.1;
+                        ctx.fillStyle = '#0ff';
+                        ctx.shadowColor = '#0ff';
+                        ctx.shadowBlur = 15;
+                        ctx.beginPath();
+                        ctx.moveTo(fx.x, fx.y);
+                        ctx.arc(fx.x, fx.y, fx.radius, -Math.PI / 2 - fx.angle / 2, -Math.PI / 2 + fx.angle / 2);
+                        ctx.closePath();
+                        ctx.fill();
+                        // 흡입 선
+                        ctx.strokeStyle = '#0ff';
+                        ctx.lineWidth = 1;
+                        ctx.globalAlpha = 0.5;
+                        for (let a = 0; a < 5; a++) {
+                            const ang = -Math.PI / 2 - fx.angle / 2 + (fx.angle / 4) * a;
+                            const r = fx.radius * (0.5 + Math.sin(Date.now() / 200 + a) * 0.3);
+                            ctx.beginPath();
+                            ctx.moveTo(fx.x, fx.y);
+                            ctx.lineTo(fx.x + Math.cos(ang) * r, fx.y + Math.sin(ang) * r);
+                            ctx.stroke();
+                        }
+                        break;
+
+                    case 'waterCannon':
+                        // 수압포 물줄기
+                        const wcGrad = ctx.createLinearGradient(fx.x, player.y, fx.x, 0);
+                        wcGrad.addColorStop(0, 'rgba(0,255,255,0.8)');
+                        wcGrad.addColorStop(1, 'rgba(0,255,255,0.1)');
+                        ctx.fillStyle = wcGrad;
+                        ctx.shadowColor = '#0ff';
+                        ctx.shadowBlur = 20;
+                        const wcWobble = Math.sin(Date.now() / 50) * 3;
+                        ctx.beginPath();
+                        ctx.moveTo(fx.x - fx.width / 2 + wcWobble, player.y - 20);
+                        ctx.lineTo(fx.x - fx.width / 3, 0);
+                        ctx.lineTo(fx.x + fx.width / 3, 0);
+                        ctx.lineTo(fx.x + fx.width / 2 - wcWobble, player.y - 20);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+
+                    case 'gasShield':
+                        // 독가스 보호막
+                        ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 150) * 0.15;
+                        const gsGrad = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, fx.radius);
+                        gsGrad.addColorStop(0, 'rgba(0,255,100,0.4)');
+                        gsGrad.addColorStop(0.7, 'rgba(0,255,100,0.15)');
+                        gsGrad.addColorStop(1, 'rgba(0,255,100,0)');
+                        ctx.fillStyle = gsGrad;
+                        ctx.beginPath();
+                        ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        // 가스 입자
+                        ctx.fillStyle = '#0f8';
+                        for (let g = 0; g < 6; g++) {
+                            const ga = (Date.now() / 500 + g * Math.PI / 3) % (Math.PI * 2);
+                            const gr = fx.radius * 0.7 + Math.sin(Date.now() / 200 + g) * 10;
+                            ctx.globalAlpha = 0.4;
+                            ctx.beginPath();
+                            ctx.arc(fx.x + Math.cos(ga) * gr, fx.y + Math.sin(ga) * gr, 4, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+
+                    case 'hydroCannon':
+                        // 하이드로 캐논 레이저
+                        ctx.globalAlpha = 0.9;
+                        ctx.strokeStyle = '#f80';
+                        ctx.shadowColor = '#f80';
+                        ctx.shadowBlur = 25;
+                        ctx.lineWidth = fx.width;
+                        ctx.beginPath();
+                        ctx.moveTo(fx.x, player.y - 20);
+                        ctx.lineTo(fx.x, 0);
+                        ctx.stroke();
+                        // 중심 밝은 선
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(fx.x, player.y - 20);
+                        ctx.lineTo(fx.x, 0);
+                        ctx.stroke();
+                        break;
+
+                    case 'spinWash':
+                        // 스핀 워시 360도 회전
+                        ctx.globalAlpha = 0.4;
+                        ctx.strokeStyle = '#f80';
+                        ctx.shadowColor = '#f80';
+                        ctx.shadowBlur = 15;
+                        ctx.lineWidth = 4;
+                        // 회전하는 워시 선
+                        for (let s = 0; s < 4; s++) {
+                            const sa = fx.angle + s * Math.PI / 2;
+                            ctx.beginPath();
+                            ctx.moveTo(fx.x, fx.y);
+                            ctx.lineTo(fx.x + Math.cos(sa) * fx.radius, fx.y + Math.sin(sa) * fx.radius);
+                            ctx.stroke();
+                        }
+                        // 외곽 원
+                        ctx.globalAlpha = 0.2;
+                        ctx.beginPath();
+                        ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                        break;
+
+                    case 'corrosion':
+                        // 부식액 웅덩이
+                        ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 300) * 0.1;
+                        const corGrad = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, fx.radius);
+                        corGrad.addColorStop(0, 'rgba(0,255,0,0.6)');
+                        corGrad.addColorStop(0.5, 'rgba(100,255,0,0.3)');
+                        corGrad.addColorStop(1, 'rgba(0,200,0,0)');
+                        ctx.fillStyle = corGrad;
+                        ctx.beginPath();
+                        ctx.ellipse(fx.x, fx.y, fx.radius, fx.radius * 0.5, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        // 기포
+                        ctx.fillStyle = '#0f0';
+                        for (let b = 0; b < 3; b++) {
+                            const bx = fx.x + Math.sin(Date.now() / 300 + b * 2) * fx.radius * 0.5;
+                            const by = fx.y + Math.cos(Date.now() / 250 + b * 1.5) * fx.radius * 0.3;
+                            ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200 + b) * 0.3;
+                            ctx.beginPath();
+                            ctx.arc(bx, by, 3 + Math.sin(Date.now() / 400 + b) * 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+
+                    case 'emergencyStop':
+                        // 화면 전체 플래시
+                        ctx.globalAlpha = fx.flash * 0.5;
+                        ctx.fillStyle = '#f22';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        // 호각 마크 (중앙)
+                        if (fx.flash > 0.3) {
+                            ctx.globalAlpha = fx.flash;
+                            ctx.fillStyle = '#fff';
+                            ctx.font = 'bold 40px Courier New';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('⚠ STOP ⚠', canvas.width / 2, canvas.height / 2);
+                        }
+                        break;
+
+                    case 'skyDrop':
+                        if (fx.phase === 'falling') {
+                            // 낙하 중인 자재
+                            ctx.fillStyle = '#ff0';
+                            ctx.shadowColor = '#ff0';
+                            ctx.shadowBlur = 15;
+                            // 크레인 자재 (사각형)
+                            ctx.fillRect(fx.x - 15, fx.y - 15, 30, 30);
+                            // 줄
+                            ctx.strokeStyle = '#888';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(fx.x, fx.y - 15);
+                            ctx.lineTo(fx.x, 0);
+                            ctx.stroke();
+                            // 타겟 표시
+                            ctx.globalAlpha = 0.3;
+                            ctx.strokeStyle = '#f00';
+                            ctx.lineWidth = 2;
+                            ctx.setLineDash([5, 5]);
+                            ctx.beginPath();
+                            ctx.arc(fx.x, fx.targetY, fx.radius, 0, Math.PI * 2);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                        } else {
+                            // 폭발
+                            const explodeAlpha = fx.timer / 300;
+                            ctx.globalAlpha = explodeAlpha * 0.5;
+                            ctx.fillStyle = '#ff0';
+                            ctx.shadowColor = '#ff0';
+                            ctx.shadowBlur = 30;
+                            ctx.beginPath();
+                            ctx.arc(fx.x, fx.targetY, fx.radius * (1 + (1 - explodeAlpha) * 0.5), 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+
+                    case 'commandSignal':
+                        // 지휘 신호 링 이펙트
+                        ctx.globalAlpha = fx.timer / 1000;
+                        ctx.strokeStyle = '#ff0';
+                        ctx.shadowColor = '#ff0';
+                        ctx.shadowBlur = 15;
+                        ctx.lineWidth = 2;
+                        const ringR = fx.radius * (1 - fx.timer / 1000) + 20;
+                        ctx.beginPath();
+                        ctx.arc(fx.x, fx.y, ringR, 0, Math.PI * 2);
+                        ctx.stroke();
+                        // 이중 링
+                        ctx.beginPath();
+                        ctx.arc(fx.x, fx.y, ringR * 0.7, 0, Math.PI * 2);
+                        ctx.stroke();
+                        break;
+                }
+
+                ctx.restore();
+            });
+        }
+
+        // ========================================
+        // 게임 업데이트
+        // ========================================
+        function update(dt) {
+            if (gameState !== 'playing') return;
+
+            const charData = selectedChar ? CHARACTERS[selectedChar] : null;
+            const currentSpeed = charData ? charData.speed * (player.buffed ? player.buffSpeedMult : 1) : 6;
+            const currentShootCd = charData ? charData.shootCooldown * (player.buffed ? player.buffFireMult : 1) : 200;
+
+            // 플레이어 이동
+            if (keys.left && player.x > player.width / 2) {
+                player.x -= currentSpeed;
+            }
+            if (keys.right && player.x < canvas.width - player.width / 2) {
+                player.x += currentSpeed;
+            }
+
+            // 발사 (총알 상한선 적용)
+            if (keys.space && Date.now() - lastShot > currentShootCd && bullets.length < LIMITS.playerBullets) {
+                bullets.push({
+                    x: player.x,
+                    y: player.y - player.height / 2,
+                    speed: 10
+                });
+                lastShot = Date.now();
+            }
+
+            // 총알 업데이트
+            bullets = bullets.filter(b => b.y > 0);
+            bullets.forEach(b => b.y -= b.speed);
+
+            // 적 총알 업데이트
+            enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
+            enemyBullets.forEach(b => b.y += b.speed);
+
+            // 적 스턴 타이머
+            if (enemyStunTimer > 0) {
+                enemyStunTimer -= dt;
+                if (enemyStunTimer <= 0) {
+                    enemyStunTimer = 0;
+                    enemies.forEach(e => e.stunned = false);
+                }
+            }
+
+            // 적 이동 및 발사
+            let moveDown = false;
+            enemies.forEach(enemy => {
+                if (enemy.stunned) return; // 스턴 상태면 이동 안 함
+
+                enemy.x += enemy.moveDir * (1 + level * 0.2);
+                if (enemy.x <= 0 || enemy.x + enemy.width >= canvas.width) {
+                    moveDown = true;
+                }
+
+                // 랜덤 발사 (상한선 적용, 스턴 시 발사 안 함)
+                if (enemyBullets.length < LIMITS.enemyBullets && Math.random() < 0.001 * level) {
+                    enemyBullets.push({
+                        x: enemy.x + enemy.width / 2,
+                        y: enemy.y + enemy.height,
+                        speed: 4 + level * 0.5
+                    });
+                }
+            });
+
+            if (moveDown) {
+                enemies.forEach(enemy => {
+                    if (!enemy.stunned) {
+                        enemy.moveDir *= -1;
+                        enemy.y += 20;
+                    }
+                });
+            }
+
+            // 총알 - 적 충돌 (역순 for문으로 splice 인덱스 꼬임 방지)
+            for (let bi = bullets.length - 1; bi >= 0; bi--) {
+                const bullet = bullets[bi];
+                if (!bullet) continue;
+                const bulletRect = { x: bullet.x - 3, y: bullet.y - 8, width: 6, height: 16 };
+                for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                    const enemy = enemies[ei];
+                    if (!enemy) continue;
+                    const enemyRect = { x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height };
+
+                    if (checkCollision(bulletRect, enemyRect)) {
+                        bullets.splice(bi, 1);
+                        const dmg = charData ? charData.attack : 1;
+                        enemy.health -= dmg;
+
+                        if (enemy.health <= 0) {
+                            createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color);
+                            enemies.splice(ei, 1);
+                            score += enemy.type === 'boss' ? 100 : (enemy.type === 'mid' ? 50 : 20);
+                            updateUI();
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // 적 총알 - 플레이어 충돌
+            if (!player.invincible) {
+                const playerRect = {
+                    x: player.x - player.width / 2,
+                    y: player.y - player.height / 2,
+                    width: player.width,
+                    height: player.height
+                };
+
+                for (let bi = enemyBullets.length - 1; bi >= 0; bi--) {
+                    const bullet = enemyBullets[bi];
+                    if (!bullet) continue;
+                    const bulletRect = { x: bullet.x - 3, y: bullet.y - 8, width: 6, height: 16 };
+                    if (checkCollision(bulletRect, playerRect)) {
+                        enemyBullets.splice(bi, 1);
+                        lives--;
+                        createExplosion(player.x, player.y, player.color);
+                        updateUI();
+
+                        if (lives <= 0) {
+                            doGameOver();
+                        } else {
+                            // 피격 후 짧은 무적
+                            player.invincible = true;
+                            player.invincibleTimer = 1500;
+                        }
+                    }
+                }
+            }
+
+            // 무적 타이머
+            if (player.invincible) {
+                player.invincibleTimer -= dt;
+                if (player.invincibleTimer <= 0) {
+                    player.invincible = false;
+                    player.invincibleTimer = 0;
+                }
+            }
+
+            // 버프 타이머
+            if (player.buffed) {
+                player.buffTimer -= dt;
+                if (player.buffTimer <= 0) {
+                    player.buffed = false;
+                    player.buffTimer = 0;
+                    player.buffSpeedMult = 1;
+                    player.buffFireMult = 1;
+                }
+            }
+
+            // 적 - 플레이어 충돌
+            if (!player.invincible) {
+                const playerRect = {
+                    x: player.x - player.width / 2,
+                    y: player.y - player.height / 2,
+                    width: player.width,
+                    height: player.height
+                };
+                for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                    const enemy = enemies[ei];
+                    if (!enemy) continue;
+                    const enemyRect = { x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height };
+                    if (checkCollision(playerRect, enemyRect)) {
+                        createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color);
+                        enemies.splice(ei, 1);
+                        lives--;
+                        updateUI();
+
+                        if (lives <= 0) {
+                            doGameOver();
+                        } else {
+                            player.invincible = true;
+                            player.invincibleTimer = 1500;
+                        }
+                    }
+
+                    // 적이 화면 아래로 내려오면 게임 오버
+                    if (enemy && enemy.y + enemy.height > player.y) {
+                        doGameOver();
+                    }
+                }
+            }
+
+            // 스킬 쿨다운 업데이트
+            for (let i = 0; i < 3; i++) {
+                if (skillCooldowns[i] > 0) {
+                    skillCooldowns[i] -= dt;
+                    if (skillCooldowns[i] < 0) skillCooldowns[i] = 0;
+                }
+                if (skillActive[i]) {
+                    skillActiveTimer[i] -= dt;
+                    if (skillActiveTimer[i] <= 0) {
+                        skillActive[i] = false;
+                        skillActiveTimer[i] = 0;
+                    }
+                }
+            }
+
+            // 스킬 키 입력 처리
+            if (keys.z) { activateSkill(0); keys.z = false; }
+            if (keys.x) { activateSkill(1); keys.x = false; }
+            if (keys.c) { activateSkill(2); keys.c = false; }
+
+            // 스킬 이펙트 업데이트
+            updateSkillEffects(dt);
+
+            // 레벨 클리어
+            if (enemies.length === 0) {
+                level++;
+                updateUI();
+                spawnEnemies();
+            }
+        }
+
+        // ========================================
+        // UI 업데이트
+        // ========================================
+        function updateUI() {
+            scoreEl.textContent = `SCORE: ${score}`;
+            livesEl.textContent = `LIVES: ${'♥'.repeat(Math.max(0, lives))}${'♡'.repeat(Math.max(0, maxLives - lives))}`;
+            levelEl.textContent = `LEVEL: ${level}`;
+        }
+
+        // ========================================
+        // 게임 오버
+        // ========================================
+        function doGameOver() {
+            gameState = 'gameover';
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('galaga-highscore', highScore);
+            }
+        }
+
+        // ========================================
+        // 게임 시작
+        // ========================================
+        function startGame() {
+            gameState = 'playing';
+            score = 0;
+            const charData = CHARACTERS[selectedChar];
+            lives = charData.health;
+            maxLives = charData.health;
+            level = 1;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 60;
+            player.color = charData.color;
+            player.speed = charData.speed;
+            player.invincible = false;
+            player.invincibleTimer = 0;
+            player.buffed = false;
+            player.buffTimer = 0;
+            player.buffSpeedMult = 1;
+            player.buffFireMult = 1;
+
+            bullets = [];
+            enemies = [];
+            particles = [];
+            enemyBullets = [];
+            skillEffects = [];
+            skillCooldowns = [0, 0, 0];
+            skillActive = [false, false, false];
+            skillActiveTimer = [0, 0, 0];
+            enemyStunTimer = 0;
+
+            updateUI();
+            spawnEnemies();
+        }
+
+        // ========================================
+        // 그리기
+        // ========================================
+        function draw() {
+            // 배경
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 별
+            drawStars();
+
+            if (gameState === 'start') {
+                drawStartScreen();
+            } else if (gameState === 'select') {
+                drawSelectScreen();
+            } else if (gameState === 'playing') {
+                // 스킬 이펙트 (배경)
+                drawSkillEffects();
+
+                // 플레이어
+                drawPlayer();
+
+                // 적
+                enemies.forEach(enemy => drawEnemy(enemy));
+
+                // 총알
+                bullets.forEach(b => drawBullet(b));
+                enemyBullets.forEach(b => drawBullet(b, true));
+
+                // 파티클
+                drawParticles();
+
+                // 스킬 UI (하단)
+                drawSkillUI();
+            } else if (gameState === 'gameover') {
+                // 게임 내용 계속 표시
+                drawPlayer();
+                enemies.forEach(enemy => drawEnemy(enemy));
+                bullets.forEach(b => drawBullet(b));
+                enemyBullets.forEach(b => drawBullet(b, true));
+                drawParticles();
+
+                drawGameOverScreen();
+            }
+        }
+
+        // ========================================
+        // 게임 루프 (deltaTime 기반)
+        // ========================================
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // deltaTime 상한 (탭 전환 시 큰 값 방지)
+            if (deltaTime > 100) deltaTime = 16;
+
+            update(deltaTime);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ========================================
+        // 키보드 이벤트
+        // ========================================
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'ArrowLeft') keys.left = true;
+            if (e.code === 'ArrowRight') keys.right = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                keys.space = true;
+
+                if (gameState === 'start') {
+                    gameState = 'select';
+                } else if (gameState === 'select') {
+                    selectedChar = CHARACTER_KEYS[selectedCharIndex];
+                    startGame();
+                } else if (gameState === 'gameover') {
+                    gameState = 'select';
+                }
+            }
+            if (e.code === 'KeyZ') { e.preventDefault(); keys.z = true; }
+            if (e.code === 'KeyX') { e.preventDefault(); keys.x = true; }
+            if (e.code === 'KeyC') { e.preventDefault(); keys.c = true; }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft') keys.left = false;
+            if (e.code === 'ArrowRight') keys.right = false;
+            if (e.code === 'Space') keys.space = false;
+            // Z, X, C는 keydown에서 바로 false 처리 (원샷)
+        });
+
+        // 캐릭터 선택 화면 좌우 키
+        document.addEventListener('keydown', (e) => {
+            if (gameState === 'select') {
+                if (e.code === 'ArrowLeft') {
+                    selectedCharIndex = (selectedCharIndex - 1 + CHARACTER_KEYS.length) % CHARACTER_KEYS.length;
+                }
+                if (e.code === 'ArrowRight') {
+                    selectedCharIndex = (selectedCharIndex + 1) % CHARACTER_KEYS.length;
+                }
+            }
+        });
+
+        // ========================================
+        // 초기화
+        // ========================================
+        initStars();
+        requestAnimationFrame(gameLoop);
+    </script>
 </body>
 </html>
