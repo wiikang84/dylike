@@ -370,47 +370,47 @@ const ITEM_TYPES = {
 // ========== 무기 정의 (12종) - 무제한 스케일링 ==========
 const WEAPONS = {
     // 기존 4종 (maxLevel 99로 증가)
-    waterGun: { name: '고압 세척기', icon: '💧', desc: '물 발사', baseDamage: 10, baseCooldown: 400, projectileSpeed: 500, maxLevel: 99 },
-    circleField: { name: '정화 필드', icon: '🔵', desc: '주변 정화', baseDamage: 5, baseRadius: 80, orbCount: 3, maxLevel: 99 },
-    homingMissile: { name: '중화제 탄', icon: '🎯', desc: '유도탄', baseDamage: 25, baseCooldown: 2000, projectileSpeed: 250, maxLevel: 99 },
+    waterGun: { name: '고압 세척기', icon: '💧', desc: '가장 가까운 적에게 물줄기 발사', baseDamage: 10, baseCooldown: 400, projectileSpeed: 500, maxLevel: 99 },
+    circleField: { name: '정화 필드', icon: '🔵', desc: '캐릭터 주변을 도는 정화 오브', baseDamage: 5, baseRadius: 80, orbCount: 3, maxLevel: 99 },
+    homingMissile: { name: '중화제 탄', icon: '🎯', desc: '적을 추적하는 유도 미사일', baseDamage: 25, baseCooldown: 2000, projectileSpeed: 250, maxLevel: 99 },
     // dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 8, baseCooldown: 100, range: 300, angle: 60, maxLevel: 99 },  // 기존
-    dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 5, baseCooldown: 300, range: 200, angle: 50, maxLevel: 99 },  // 너프
+    dredgeHose: { name: '준설호스', icon: '🌊', desc: '전방 부채꼴로 오염물 흡입', baseDamage: 5, baseCooldown: 300, range: 200, angle: 50, maxLevel: 99 },  // 너프
 
     // ★ 신규 8종 (maxLevel 99)
-    blower: { name: '산업용 송풍기', icon: '💨', desc: '적 밀치기+데미지', baseDamage: 8, baseCooldown: 800, range: 180, angle: 60, knockback: 300, maxLevel: 99 },
-    detector: { name: '오염측정기', icon: '📡', desc: '연쇄 번개 공격', baseDamage: 15, baseCooldown: 1200, chainCount: 3, chainRange: 150, maxLevel: 99 },
-    gloves: { name: '보호장갑', icon: '🧤', desc: '빠른 펀치 공격', baseDamage: 12, baseCooldown: 200, range: 60, angle: 120, maxLevel: 99 },
-    spray: { name: '소독스프레이', icon: '🧴', desc: '정화 영역 생성', baseDamage: 3, baseCooldown: 3000, radius: 80, duration: 5000, maxLevel: 99 },
+    blower: { name: '산업용 송풍기', icon: '💨', desc: '강풍으로 전방 적을 밀쳐냄', baseDamage: 8, baseCooldown: 800, range: 180, angle: 60, knockback: 300, maxLevel: 99 },
+    detector: { name: '오염측정기', icon: '📡', desc: '적 사이를 연쇄하는 번개', baseDamage: 15, baseCooldown: 1200, chainCount: 3, chainRange: 150, maxLevel: 99 },
+    gloves: { name: '보호장갑', icon: '🧤', desc: '근접 적에게 빠른 연타', baseDamage: 12, baseCooldown: 200, range: 60, angle: 120, maxLevel: 99 },
+    spray: { name: '소독스프레이', icon: '🧴', desc: '바닥에 지속 데미지 영역 생성', baseDamage: 3, baseCooldown: 3000, radius: 80, duration: 5000, maxLevel: 99 },
     // cone: { name: '안전콘 터렛', icon: '🔶', desc: '터렛 설치, 미사일 발사', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },  // 기존 (소환 방식)
-    cone: { name: '화염탄', icon: '🔶', desc: '폭발탄 발사, 범위 데미지', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },
+    cone: { name: '화염탄', icon: '🔶', desc: '적에게 폭발탄, 주변 적도 피해', baseDamage: 40, baseCooldown: 4000, absorbHits: 5, explosionRadius: 100, maxLevel: 99 },
     // truck: { name: '미니탱크', icon: '🚛', desc: '탱크 소환, 포격 공격', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },  // 기존 (소환 방식)
-    truck: { name: '충격파', icon: '🚛', desc: '주변 충격파, 넉백 효과', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },
+    truck: { name: '충격파', icon: '🚛', desc: '주변 모든 적을 밀쳐내는 충격파', baseDamage: 30, baseCooldown: 8000, dashDistance: 300, dashSpeed: 800, maxLevel: 99 },
     // drone: { name: '공격드론', icon: '🚁', desc: '드론 소환, 유도탄 발사', baseDamage: 6, baseCooldown: 500, orbitRadius: 150, maxLevel: 99 },  // 기존 (소환 방식)
-    drone: { name: '공습', icon: '🚁', desc: '적 다수에게 낙뢰 공격', baseDamage: 25, baseCooldown: 3000, orbitRadius: 150, maxLevel: 99 },
-    pipe: { name: '폐수파이프', icon: '🔧', desc: '관통 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 99 }
+    drone: { name: '공습', icon: '🚁', desc: '여러 적 위치에 낙뢰 투하', baseDamage: 25, baseCooldown: 3000, orbitRadius: 150, maxLevel: 99 },
+    pipe: { name: '폐수파이프', icon: '🔧', desc: '적을 관통하는 강력한 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 99 }
 };
 
 // ========== 패시브 스킬 (16종) - 밸런스 너프 (2026-02-07) ==========
 const PASSIVES = {
     // 기존 5종 (효과 축소)
-    damage: { name: '정화력', icon: '⚔️', desc: '데미지 +6%', maxLevel: 99, effect: 0.06 },       // 기존 0.1 → 0.06
-    speed: { name: '이동속도', icon: '👟', desc: '속도 +5%', maxLevel: 99, effect: 0.05 },          // 기존 0.08 → 0.05
-    maxHp: { name: '체력', icon: '🛡️', desc: 'HP +15', maxLevel: 99, effect: 15 },                  // 기존 25 → 15
-    magnet: { name: '자석', icon: '🧲', desc: '수집범위 +25%', maxLevel: 99, effect: 0.25 },        // 기존 0.3 → 0.25
-    regen: { name: '재생', icon: '💚', desc: '초당 HP +1', maxLevel: 99, effect: 1 },               // 유지
+    damage: { name: '정화력', icon: '⚔️', desc: '공격력 6% 증가', maxLevel: 99, effect: 0.06 },       // 기존 0.1 → 0.06
+    speed: { name: '이동속도', icon: '👟', desc: '이동속도 5% 증가', maxLevel: 99, effect: 0.05 },          // 기존 0.08 → 0.05
+    maxHp: { name: '체력', icon: '🛡️', desc: '최대 HP 15 증가', maxLevel: 99, effect: 15 },                  // 기존 25 → 15
+    magnet: { name: '자석', icon: '🧲', desc: '경험치 수집 범위 25% 증가', maxLevel: 99, effect: 0.25 },        // 기존 0.3 → 0.25
+    regen: { name: '재생', icon: '💚', desc: '매초 HP 1 회복', maxLevel: 99, effect: 1 },               // 유지
 
     // ★ 신규 11종 (효과 축소)
-    cooldown: { name: '효율성', icon: '⚡', desc: '쿨다운 -3%', maxLevel: 99, effect: 0.03 },       // 기존 0.05 → 0.03
-    projectile: { name: '투사체', icon: '✨', desc: '투사체 +1', maxLevel: 99, effect: 1 },          // 유지
-    area: { name: '범위', icon: '🎆', desc: '공격범위 +7%', maxLevel: 99, effect: 0.07 },           // 기존 0.1 → 0.07
-    growth: { name: '숙련도', icon: '📈', desc: '경험치 +8%', maxLevel: 99, effect: 0.08 },         // 유지
-    armor: { name: '방어력', icon: '🔒', desc: '받는 데미지 -1', maxLevel: 99, effect: 1 },         // 유지
-    critChance: { name: '크리티컬', icon: '💥', desc: '치명타 확률 +2%', maxLevel: 99, effect: 0.02 },  // 기존 0.03 → 0.02
-    critDamage: { name: '치명타력', icon: '🔥', desc: '치명타 데미지 +10%', maxLevel: 99, effect: 0.10 }, // 기존 0.15 → 0.10
-    duration: { name: '지속시간', icon: '⏱️', desc: '효과 지속 +10%', maxLevel: 99, effect: 0.1 },  // 유지
-    luck: { name: '행운', icon: '🍀', desc: '아이템 드롭률 +5%', maxLevel: 99, effect: 0.05 },     // 유지
-    pierce: { name: '관통', icon: '🗡️', desc: '투사체 관통 +1', maxLevel: 99, effect: 1 },         // 유지
-    lifesteal: { name: '흡혈', icon: '🩸', desc: '데미지 0.5% HP회복', maxLevel: 99, effect: 0.005 } // 기존 0.01 → 0.005
+    cooldown: { name: '효율성', icon: '⚡', desc: '공격 쿨다운 3% 감소', maxLevel: 99, effect: 0.03 },       // 기존 0.05 → 0.03
+    projectile: { name: '투사체', icon: '✨', desc: '투사체 1개 추가 발사', maxLevel: 99, effect: 1 },          // 유지
+    area: { name: '범위', icon: '🎆', desc: '공격 범위 7% 확대', maxLevel: 99, effect: 0.07 },           // 기존 0.1 → 0.07
+    growth: { name: '숙련도', icon: '📈', desc: '획득 경험치 8% 증가', maxLevel: 99, effect: 0.08 },         // 유지
+    armor: { name: '방어력', icon: '🔒', desc: '받는 피해 1 감소', maxLevel: 99, effect: 1 },         // 유지
+    critChance: { name: '크리티컬', icon: '💥', desc: '치명타 확률 2% 증가', maxLevel: 99, effect: 0.02 },  // 기존 0.03 → 0.02
+    critDamage: { name: '치명타력', icon: '🔥', desc: '치명타 피해 10% 증가', maxLevel: 99, effect: 0.10 }, // 기존 0.15 → 0.10
+    duration: { name: '지속시간', icon: '⏱️', desc: '스킬 지속시간 10% 증가', maxLevel: 99, effect: 0.1 },  // 유지
+    luck: { name: '행운', icon: '🍀', desc: '아이템 드롭률 5% 증가', maxLevel: 99, effect: 0.05 },     // 유지
+    pierce: { name: '관통', icon: '🗡️', desc: '투사체가 적 1명 더 관통', maxLevel: 99, effect: 1 },         // 유지
+    lifesteal: { name: '흡혈', icon: '🩸', desc: '준 피해의 0.5% HP 회복', maxLevel: 99, effect: 0.005 } // 기존 0.01 → 0.005
 };
 
 // ========== ★ 스킬 시너지 시스템 ★ ==========
@@ -2832,29 +2832,34 @@ class ClassSelectScene extends Phaser.Scene {
             const y = h/2 + 60;
 
             // 카드 배경
-            const card = this.add.rectangle(x, y, cardWidth, 240, 0x2a2a4a)
+            const card = this.add.rectangle(x, y, cardWidth, 260, 0x2a2a4a)
                 .setStrokeStyle(3, classInfo.color)
                 .setInteractive({ useHandCursor: true });
 
-            // 아이콘
-            this.add.text(x, y - 75, classInfo.icon, { fontSize: '52px' }).setOrigin(0.5);
+            // ★ Canvas 미니 일러스트 (캐릭터 + 무기를 들고 있는 모습)
+            this.drawClassPreview(x, y - 70, key, classInfo);
 
             // 클래스 이름
-            this.add.text(x, y - 15, classInfo.name, {
+            this.add.text(x, y + 5, classInfo.name, {
                 fontSize: '22px', fontStyle: 'bold', fill: '#fff'
             }).setOrigin(0.5);
 
             // 설명
-            this.add.text(x, y + 25, classInfo.desc, {
+            this.add.text(x, y + 35, classInfo.desc, {
                 fontSize: '11px', fill: '#aaa',
                 wordWrap: { width: cardWidth - 20 },
                 align: 'center'
             }).setOrigin(0.5);
 
-            // 시작 무기
+            // 시작 무기 (더 크게 + 아이콘 강조)
             const startWeapon = WEAPONS[classInfo.startWeapon];
-            this.add.text(x, y + 70, `${startWeapon.icon} ${startWeapon.name}`, {
-                fontSize: '11px', fill: '#7cb342'
+            this.add.text(x, y + 70, `시작 무기`, {
+                fontSize: '9px', fill: '#888'
+            }).setOrigin(0.5);
+            const weaponBg = this.add.rectangle(x, y + 95, cardWidth - 30, 28, 0x1a1a2e)
+                .setStrokeStyle(1, 0x7cb342, 0.6);
+            this.add.text(x, y + 95, `${startWeapon.icon} ${startWeapon.name}`, {
+                fontSize: '14px', fontStyle: 'bold', fill: '#7cb342'
             }).setOrigin(0.5);
 
             // 호버 효과
@@ -2889,6 +2894,142 @@ class ClassSelectScene extends Phaser.Scene {
         this.input.keyboard.on('keydown-W', () => { this.selectedDifficulty = 'normal'; this.updateDifficultyUI(); });
         this.input.keyboard.on('keydown-E', () => { this.selectedDifficulty = 'hard'; this.updateDifficultyUI(); });
         this.input.keyboard.on('keydown-R', () => { this.selectedDifficulty = 'hell'; this.updateDifficultyUI(); });
+    }
+
+    // ★ 캐릭터 + 무기 미니 일러스트 렌더링
+    drawClassPreview(cx, cy, classKey, classInfo) {
+        const g = this.add.graphics();
+        const color = classInfo.color;
+        const r = (color >> 16) & 0xff, gr = (color >> 8) & 0xff, b = color & 0xff;
+
+        if (classKey === 'washer') {
+            // 준설공: 둥근 방수복 실루엣 + 오른손에 준설호스
+            // 몸체 (넓은 사다리꼴)
+            g.fillStyle(0x00838f, 1);
+            g.fillRoundedRect(cx - 20, cy - 15, 40, 45, 6);
+            // 안전모 (시안)
+            g.fillStyle(color, 1);
+            g.fillCircle(cx, cy - 22, 14);
+            // 안전모 챙
+            g.fillStyle(0x006064, 1);
+            g.fillRect(cx - 16, cy - 18, 32, 4);
+            // 바이저 (검정)
+            g.fillStyle(0x1a1a2e, 1);
+            g.fillRect(cx - 8, cy - 14, 16, 6);
+            // 오른손 호스 (🌊 효과)
+            g.lineStyle(4, 0x4dd0e1, 1);
+            g.beginPath();
+            g.moveTo(cx + 20, cy - 5);
+            g.lineTo(cx + 35, cy - 15);
+            g.lineTo(cx + 42, cy - 25);
+            g.strokePath();
+            // 호스 노즐
+            g.fillStyle(0x78909c, 1);
+            g.fillRect(cx + 38, cy - 30, 8, 10);
+            // 물줄기 파티클
+            g.fillStyle(0x4dd0e1, 0.7);
+            g.fillCircle(cx + 48, cy - 32, 3);
+            g.fillCircle(cx + 52, cy - 36, 2);
+            g.fillCircle(cx + 46, cy - 38, 2);
+            g.fillStyle(0x80deea, 0.5);
+            g.fillCircle(cx + 55, cy - 30, 2);
+            g.fillCircle(cx + 50, cy - 40, 1.5);
+            // 장화
+            g.fillStyle(0x00695c, 1);
+            g.fillRoundedRect(cx - 16, cy + 28, 14, 10, 3);
+            g.fillRoundedRect(cx + 2, cy + 28, 14, 10, 3);
+        } else if (classKey === 'purifier') {
+            // 세정공: 날카로운 전투복 + 주위에 정화 오브
+            // 몸체 (날카로운 역오각형)
+            g.fillStyle(0xe65100, 1);
+            g.beginPath();
+            g.moveTo(cx, cy - 20);
+            g.lineTo(cx + 22, cy + 5);
+            g.lineTo(cx + 16, cy + 30);
+            g.lineTo(cx - 16, cy + 30);
+            g.lineTo(cx - 22, cy + 5);
+            g.closePath();
+            g.fillPath();
+            // 안전모 (오렌지)
+            g.fillStyle(color, 1);
+            g.fillCircle(cx, cy - 24, 13);
+            // 바이저 (직사각형)
+            g.fillStyle(0x1a1a2e, 1);
+            g.fillRect(cx - 10, cy - 20, 20, 7);
+            g.fillStyle(0xffab40, 0.6);
+            g.fillRect(cx - 9, cy - 19, 18, 5);
+            // 정화 오브 3개 (회전 느낌)
+            const orbDist = 30;
+            for (let oi = 0; oi < 3; oi++) {
+                const angle = (oi * Math.PI * 2 / 3) - Math.PI / 2;
+                const ox = cx + Math.cos(angle) * orbDist;
+                const oy = cy + 5 + Math.sin(angle) * orbDist;
+                g.fillStyle(0x2196f3, 0.8);
+                g.fillCircle(ox, oy, 5);
+                g.fillStyle(0x64b5f6, 0.4);
+                g.fillCircle(ox, oy, 8);
+            }
+            // 안전화
+            g.fillStyle(0xbf360c, 1);
+            g.fillRoundedRect(cx - 14, cy + 28, 12, 8, 2);
+            g.fillRoundedRect(cx + 2, cy + 28, 12, 8, 2);
+        } else if (classKey === 'technician') {
+            // 신호수: 날씬한 실루엣 + 깃발 + 빨간 안전모
+            // 몸체 (날씬한 삼각형 + 형광 조끼 라인)
+            g.fillStyle(0xb71c1c, 1);
+            g.beginPath();
+            g.moveTo(cx, cy - 18);
+            g.lineTo(cx + 16, cy + 30);
+            g.lineTo(cx - 16, cy + 30);
+            g.closePath();
+            g.fillPath();
+            // 형광 조끼 X 라인
+            g.lineStyle(2, 0xffeb3b, 0.8);
+            g.beginPath();
+            g.moveTo(cx - 10, cy);
+            g.lineTo(cx + 10, cy + 20);
+            g.moveTo(cx + 10, cy);
+            g.lineTo(cx - 10, cy + 20);
+            g.strokePath();
+            // 빨간 안전모
+            g.fillStyle(color, 1);
+            g.fillCircle(cx, cy - 22, 12);
+            // 안전모 빛 반사
+            g.fillStyle(0xef5350, 0.7);
+            g.fillCircle(cx - 3, cy - 25, 4);
+            // 바이저
+            g.fillStyle(0x1a1a2e, 1);
+            g.fillRect(cx - 7, cy - 17, 14, 5);
+            // 왼손 깃발
+            g.lineStyle(2, 0x795548, 1);
+            g.beginPath();
+            g.moveTo(cx - 18, cy - 5);
+            g.lineTo(cx - 30, cy - 35);
+            g.strokePath();
+            // 깃발 천 (빨강)
+            g.fillStyle(0xf44336, 0.9);
+            g.beginPath();
+            g.moveTo(cx - 30, cy - 35);
+            g.lineTo(cx - 15, cy - 30);
+            g.lineTo(cx - 18, cy - 22);
+            g.lineTo(cx - 32, cy - 27);
+            g.closePath();
+            g.fillPath();
+            // 오른쪽 번개 이펙트 (📡 측정기)
+            g.lineStyle(2, 0xffd600, 0.8);
+            g.beginPath();
+            g.moveTo(cx + 18, cy - 10);
+            g.lineTo(cx + 24, cy - 20);
+            g.lineTo(cx + 20, cy - 20);
+            g.lineTo(cx + 26, cy - 30);
+            g.strokePath();
+            g.fillStyle(0xffd600, 0.5);
+            g.fillCircle(cx + 24, cy - 22, 4);
+            // 안전화
+            g.fillStyle(0x880e4f, 1);
+            g.fillRoundedRect(cx - 12, cy + 28, 10, 8, 2);
+            g.fillRoundedRect(cx + 2, cy + 28, 10, 8, 2);
+        }
     }
 
     updateDifficultyUI() {
@@ -3436,138 +3577,154 @@ class GameScene extends Phaser.Scene {
         return bonus;
     }
 
-    // ★ 스킬 UI (왼쪽 아이콘 목록) - 더 많이 표시
+    // ★ 스킬 UI (왼쪽 VS스타일 슬롯 그리드) - 리뉴얼
     createSkillUI() {
-        this.skillUI = this.add.container(10, 60).setScrollFactor(0).setDepth(100);
+        this.skillUI = this.add.container(6, 55).setScrollFactor(0).setDepth(100);
         this.skillIcons = [];
 
-        // ★ 배경 패널 (높이 증가: 420px)
-        const panelBg = this.add.rectangle(0, 0, 55, 420, 0x000000, 0.5)
-            .setOrigin(0, 0)
-            .setStrokeStyle(1, 0x00a8e8, 0.5);
+        // 배경 패널 (슬림화: 48px 폭, 반투명)
+        const panelBg = this.add.rectangle(0, 0, 48, 340, 0x000000, 0.35)
+            .setOrigin(0, 0);
         this.skillUI.add(panelBg);
 
-        // "무기" 라벨
-        const weaponLabel = this.add.text(27, 8, '무기', {
-            fontSize: '10px',
-            fontStyle: 'bold',
-            fill: '#00a8e8'
+        // "무기" 라벨 (상단)
+        const weaponLabel = this.add.text(24, 6, '⚔ 무기', {
+            fontSize: '9px', fontStyle: 'bold', fill: '#00a8e8'
         }).setOrigin(0.5);
         this.skillUI.add(weaponLabel);
 
-        // 구분선 (무기/패시브)
-        const divider = this.add.rectangle(27, 200, 45, 2, 0x00a8e8, 0.5);
+        // 무기 빈 슬롯 6개 (2열 x 3행)
+        for (let s = 0; s < 6; s++) {
+            const col = s % 2;
+            const row = Math.floor(s / 2);
+            const sx = 12 + col * 24;
+            const sy = 22 + row * 28;
+            const emptySlot = this.add.rectangle(sx, sy, 22, 22, 0x1a1a2e, 0.4)
+                .setStrokeStyle(1, 0x00a8e8, 0.2);
+            this.skillUI.add(emptySlot);
+        }
+
+        // 구분선
+        const divider = this.add.rectangle(24, 110, 40, 1, 0x555555, 0.6);
         this.skillUI.add(divider);
 
         // "패시브" 라벨
-        const passiveLabel = this.add.text(27, 210, '패시브', {
-            fontSize: '10px',
-            fontStyle: 'bold',
-            fill: '#7cb342'
+        const passiveLabel = this.add.text(24, 118, '🛡 패시브', {
+            fontSize: '9px', fontStyle: 'bold', fill: '#7cb342'
         }).setOrigin(0.5);
         this.skillUI.add(passiveLabel);
+
+        // 패시브 빈 슬롯 6개 (2열 x 3행)
+        for (let s = 0; s < 6; s++) {
+            const col = s % 2;
+            const row = Math.floor(s / 2);
+            const sx = 12 + col * 24;
+            const sy = 134 + row * 28;
+            const emptySlot = this.add.rectangle(sx, sy, 22, 22, 0x1a1a2e, 0.4)
+                .setStrokeStyle(1, 0x7cb342, 0.2);
+            this.skillUI.add(emptySlot);
+        }
     }
 
-    // ★ 스킬 UI 업데이트 - 더 많이 표시 (5개씩)
+    // ★ 스킬 UI 업데이트 - VS스타일 2열 그리드
     updateSkillUI() {
         // 기존 아이콘 제거
         this.skillIcons.forEach(icon => icon.destroy());
         this.skillIcons = [];
 
-        const startY = 25;
-        const iconSize = 28;   // 아이콘 크기 축소
-        const gap = 34;        // 간격 축소
-        const centerX = 27;
         let idx = 0;
 
-        // 무기 표시 (상단) - 최대 5개
+        // 무기 표시 (상단 2열 x 3행, 최대 6개)
         for (const [key, level] of Object.entries(this.playerState.weapons)) {
             if (level > 0 && WEAPONS[key]) {
-                const y = startY + idx * gap;
-                const maxLevel = WEAPONS[key].maxLevel || 8;
-                const isMax = level >= maxLevel;
+                const col = idx % 2;
+                const row = Math.floor(idx / 2);
+                const sx = 12 + col * 24;
+                const sy = 22 + row * 28;
 
-                // 아이콘 배경
-                const borderColor = isMax ? 0xffd700 : 0x00a8e8;
-                const bg = this.add.rectangle(centerX, y, iconSize, iconSize, 0x1a1a2e, 0.8)
-                    .setStrokeStyle(isMax ? 2 : 1, borderColor);
+                // 아이콘 배경 (채워진 슬롯)
+                const bg = this.add.rectangle(sx, sy, 22, 22, 0x1a1a2e, 0.9)
+                    .setStrokeStyle(1, 0x00a8e8, 0.8);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
-                // 아이콘 (이모지)
-                const icon = this.add.text(centerX, y - 2, WEAPONS[key].icon, {
-                    fontSize: '16px'
+                // 이모지 아이콘
+                const icon = this.add.text(sx, sy - 1, WEAPONS[key].icon, {
+                    fontSize: '13px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시
-                const lvText = this.add.text(centerX, y + 11, `${level}`, {
-                    fontSize: '9px',
-                    fontStyle: 'bold',
-                    fill: isMax ? '#ffd700' : '#00a8e8'
-                }).setOrigin(0.5);
-                this.skillUI.add(lvText);
-                this.skillIcons.push(lvText);
+                // VS 스타일 레벨 도트 (하단에 작은 사각형들)
+                const maxDots = 5;
+                const filledDots = Math.min(Math.ceil(level / 20), maxDots);  // 20레벨 단위로 도트
+                for (let d = 0; d < maxDots; d++) {
+                    const dotX = sx - 8 + d * 4;
+                    const dotY = sy + 13;
+                    const dotColor = d < filledDots ? 0xffd700 : 0x333333;
+                    const dot = this.add.rectangle(dotX, dotY, 3, 2, dotColor);
+                    this.skillUI.add(dot);
+                    this.skillIcons.push(dot);
+                }
 
                 idx++;
-                if (idx >= 5) break;  // ★ 최대 5개 무기
+                if (idx >= 6) break;
             }
         }
 
-        // 패시브 표시 (하단) - 최대 5개
+        // 패시브 표시 (하단 2열 x 3행, 최대 6개)
         idx = 0;
         for (const [key, level] of Object.entries(this.playerState.passives)) {
             if (level > 0 && PASSIVES[key]) {
-                const y = 225 + idx * gap;
-                const maxLevel = PASSIVES[key].maxLevel || 5;
-                const isMax = level >= maxLevel;
+                const col = idx % 2;
+                const row = Math.floor(idx / 2);
+                const sx = 12 + col * 24;
+                const sy = 134 + row * 28;
 
-                // 아이콘 배경
-                const borderColor = isMax ? 0xffd700 : 0x7cb342;
-                const bg = this.add.rectangle(centerX, y, iconSize, iconSize, 0x1a1a2e, 0.8)
-                    .setStrokeStyle(isMax ? 2 : 1, borderColor);
+                // 아이콘 배경 (채워진 슬롯)
+                const bg = this.add.rectangle(sx, sy, 22, 22, 0x1a1a2e, 0.9)
+                    .setStrokeStyle(1, 0x7cb342, 0.8);
                 this.skillUI.add(bg);
                 this.skillIcons.push(bg);
 
-                // 아이콘 (이모지)
-                const icon = this.add.text(centerX, y - 2, PASSIVES[key].icon, {
-                    fontSize: '16px'
+                // 이모지 아이콘
+                const icon = this.add.text(sx, sy - 1, PASSIVES[key].icon, {
+                    fontSize: '13px'
                 }).setOrigin(0.5);
                 this.skillUI.add(icon);
                 this.skillIcons.push(icon);
 
-                // 레벨 표시
-                const lvText = this.add.text(centerX, y + 11, `${level}`, {
-                    fontSize: '9px',
-                    fontStyle: 'bold',
-                    fill: isMax ? '#ffd700' : '#7cb342'
-                }).setOrigin(0.5);
-                this.skillUI.add(lvText);
-                this.skillIcons.push(lvText);
+                // VS 스타일 레벨 도트
+                const maxDots = 5;
+                const filledDots = Math.min(Math.ceil(level / 20), maxDots);
+                for (let d = 0; d < maxDots; d++) {
+                    const dotX = sx - 8 + d * 4;
+                    const dotY = sy + 13;
+                    const dotColor = d < filledDots ? 0xffd700 : 0x333333;
+                    const dot = this.add.rectangle(dotX, dotY, 3, 2, dotColor);
+                    this.skillUI.add(dot);
+                    this.skillIcons.push(dot);
+                }
 
                 idx++;
-                if (idx >= 5) break;  // ★ 최대 5개 패시브
+                if (idx >= 6) break;
             }
         }
 
-        // ★★★ 활성화된 시너지 표시 ★★★
+        // ★ 활성화된 시너지 표시 (하단)
         const activeSynergies = this.getActiveSynergies();
         if (activeSynergies.length > 0) {
-            // 시너지 라벨
-            const synergyLabel = this.add.text(27, 395, '시너지', {
-                fontSize: '8px',
-                fontStyle: 'bold',
-                fill: '#ff6b6b'
+            const synergyY = 225;
+            const synergyLabel = this.add.text(24, synergyY, '⚡시너지', {
+                fontSize: '8px', fontStyle: 'bold', fill: '#ff6b6b'
             }).setOrigin(0.5);
             this.skillUI.add(synergyLabel);
             this.skillIcons.push(synergyLabel);
 
-            // 시너지 아이콘 표시 (최대 2개)
-            for (let i = 0; i < Math.min(activeSynergies.length, 2); i++) {
+            for (let i = 0; i < Math.min(activeSynergies.length, 3); i++) {
                 const synergy = activeSynergies[i];
-                const synergyIcon = this.add.text(27, 408 + i * 14, synergy.icon, {
-                    fontSize: '12px'
+                const synergyIcon = this.add.text(24, synergyY + 14 + i * 14, synergy.icon, {
+                    fontSize: '11px'
                 }).setOrigin(0.5);
                 this.skillUI.add(synergyIcon);
                 this.skillIcons.push(synergyIcon);
@@ -6626,15 +6783,15 @@ class LevelUpScene extends Phaser.Scene {
         // 선택지 생성
         this.displayChoices();
 
-        // ★★★ 리롤 버튼 ★★★
-        const rerollCost = this.currentRerollCount === 0 ? 0 : 10;  // 첫 리롤 무료, 이후 경험치 10 소모
-        const canReroll = rerollCost === 0 || (this.data.exp || 0) >= rerollCost;
+        // ★★★ 리롤 버튼 (1회 제한) ★★★
+        // const rerollCost = this.currentRerollCount === 0 ? 0 : 10;  // 기존: 무제한 리롤
+        const canReroll = this.currentRerollCount < 1;  // 1회만 가능 (무료)
 
         const rerollBtn = this.add.rectangle(w/2 - 100, h - 50, 150, 40, canReroll ? 0x9c27b0 : 0x555555)
             .setStrokeStyle(2, canReroll ? 0xce93d8 : 0x777777)
             .setInteractive({ useHandCursor: canReroll });
 
-        const rerollLabel = rerollCost === 0 ? '🔄 리롤 (무료)' : `🔄 리롤 (-${rerollCost}EXP)`;
+        const rerollLabel = canReroll ? '🔄 리롤 (1회)' : '🔄 리롤 불가';
         this.add.text(w/2 - 100, h - 50, rerollLabel, {
             fontSize: '14px', fontStyle: 'bold', fill: canReroll ? '#fff' : '#888'
         }).setOrigin(0.5);
@@ -6642,7 +6799,7 @@ class LevelUpScene extends Phaser.Scene {
         if (canReroll) {
             rerollBtn.on('pointerover', () => rerollBtn.setFillStyle(0xab47bc));
             rerollBtn.on('pointerout', () => rerollBtn.setFillStyle(0x9c27b0));
-            rerollBtn.on('pointerdown', () => this.doReroll(rerollCost));
+            rerollBtn.on('pointerdown', () => this.doReroll(0));
         }
 
         // ★★★ 밴 안내 ★★★
@@ -6651,7 +6808,7 @@ class LevelUpScene extends Phaser.Scene {
         }).setOrigin(0.5);
     }
 
-    // ★ 선택지 카드 표시
+    // ★ 선택지 카드 표시 - 개선 (아이콘 확대, 레벨 변화, 보너스 표시)
     displayChoices() {
         const w = this.cameras.main.width, h = this.cameras.main.height;
 
@@ -6664,24 +6821,73 @@ class LevelUpScene extends Phaser.Scene {
         const choices = this.generateChoices();
         this.currentChoices = choices;
 
-        const cw = 170, gap = 20;
+        const cw = 175, gap = 20;
         const startX = w/2 - ((choices.length-1) * (cw+gap)) / 2;
 
         choices.forEach((c, i) => {
             const x = startX + i*(cw+gap);
-            const card = this.add.rectangle(x, 260, cw, 220, 0x2a2a4a)
-                .setStrokeStyle(3, 0x00a8e8)
+            const cardColor = c.type === 'weapon' ? 0x00a8e8 : 0x7cb342;
+            const card = this.add.rectangle(x, 255, cw, 250, 0x2a2a4a)
+                .setStrokeStyle(3, cardColor)
                 .setInteractive({ useHandCursor: true });
             this.choiceCards.push(card);
 
             const info = c.type === 'weapon' ? WEAPONS[c.key] : PASSIVES[c.key];
             const lvl = c.type === 'weapon' ? (this.data.weapons[c.key] || 0) : (this.data.passives[c.key] || 0);
 
-            const iconText = this.add.text(x, 180, info.icon, { fontSize: '32px' }).setOrigin(0.5);
-            const nameText = this.add.text(x, 220, info.name, { fontSize: '13px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-            const lvlText = this.add.text(x, 238, c.isNew ? 'NEW!' : `Lv.${lvl+1}`, { fontSize: '11px', fill: c.isNew ? '#ff0' : '#00a8e8' }).setOrigin(0.5);
-            const descText = this.add.text(x, 268, info.desc, { fontSize: '10px', fill: '#aaa', wordWrap: { width: 150 }, align: 'center' }).setOrigin(0.5);
-            this.choiceCards.push(iconText, nameText, lvlText, descText);
+            // 타입 라벨 (무기/패시브 구분)
+            const typeLabel = this.add.text(x, 150, c.type === 'weapon' ? '⚔ 무기' : '🛡 패시브', {
+                fontSize: '9px', fill: c.type === 'weapon' ? '#00a8e8' : '#7cb342'
+            }).setOrigin(0.5);
+            this.choiceCards.push(typeLabel);
+
+            // 아이콘 (확대: 40px)
+            const iconText = this.add.text(x, 178, info.icon, { fontSize: '40px' }).setOrigin(0.5);
+            this.choiceCards.push(iconText);
+
+            // 이름 (14px)
+            const nameText = this.add.text(x, 212, info.name, { fontSize: '14px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
+            this.choiceCards.push(nameText);
+
+            // 레벨 표시 (Lv.N → N+1 형식)
+            let lvlStr;
+            if (c.isNew) {
+                lvlStr = '✦ NEW!';
+            } else {
+                lvlStr = `Lv.${lvl} → ${lvl + 1}`;
+            }
+            const lvlText = this.add.text(x, 232, lvlStr, {
+                fontSize: '11px', fill: c.isNew ? '#ffd700' : '#00a8e8'
+            }).setOrigin(0.5);
+            this.choiceCards.push(lvlText);
+
+            // 설명 (11px, 더 읽기 좋게)
+            const descText = this.add.text(x, 260, info.desc, {
+                fontSize: '11px', fill: '#ccc', wordWrap: { width: 155 }, align: 'center'
+            }).setOrigin(0.5);
+            this.choiceCards.push(descText);
+
+            // ★ 레벨업 보너스 표시 (초록색)
+            let bonusStr = '';
+            if (c.type === 'weapon' && !c.isNew) {
+                bonusStr = '▲ 데미지 +12%';
+            } else if (c.type === 'passive' && !c.isNew) {
+                // 패시브 효과 구체적 표시
+                const effectVal = info.effect;
+                if (typeof effectVal === 'number') {
+                    if (effectVal < 1) {
+                        bonusStr = `▲ 효과 +${Math.round(effectVal * 100)}%`;
+                    } else {
+                        bonusStr = `▲ 효과 +${effectVal}`;
+                    }
+                }
+            }
+            if (bonusStr) {
+                const bonusText = this.add.text(x, 290, bonusStr, {
+                    fontSize: '10px', fontStyle: 'bold', fill: '#7cb342'
+                }).setOrigin(0.5);
+                this.choiceCards.push(bonusText);
+            }
 
             // 시너지 힌트
             const synergyHint = this.getSynergyHint(c.key);
