@@ -136,6 +136,13 @@ git add . && git commit -m "메시지" && git push origin main
 - 수정 후 반드시: `firebase deploy` + `git push`
 
 ## 변경 이력
+- 2026-02-08: 쉬움 난이도 대폭 완화 (VS 리서치 기반)
+  - 적 HP 0.7→0.4, 데미지 0.6→0.3, 속도 0.8→0.7, 경험치 1.3→1.8
+  - 스폰 간격 2.5배 느리게, 동시 스폰 40%, 웨이브 크기 30%
+  - 엘리트 출현 3분→10분으로 지연
+  - 난이도별 스폰 배율 시스템 추가 (spawnRateMult, spawnCountMult, waveSizeMult, eliteStartMin)
+  - updateSpawning 함수에서 난이도 배율 적용
+  - 보통/어려움/헬모드는 변경 없음
 - 2026-02-08: UI/UX 대규모 개선 + 리롤 1회 제한
   - 캐릭터 선택 화면: Canvas 미니 일러스트 (무기를 들고 있는 모습) 추가
   - 준설공: 호스를 쥐고 물줄기 나오는 모습, 세정공: 정화 오브 도는 모습, 신호수: 깃발+번개

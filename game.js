@@ -241,11 +241,15 @@ const DIFFICULTY = {
     easy: {
         name: '쉬움',
         color: 0x4caf50,
-        enemyHpMult: 0.7,
-        enemyDmgMult: 0.6,
-        enemySpeedMult: 0.8,
-        expMult: 1.3,
-        desc: '입문자용'
+        enemyHpMult: 0.4,          // HP 40% (기존 0.7)
+        enemyDmgMult: 0.3,         // 데미지 30% (기존 0.6)
+        enemySpeedMult: 0.7,       // 속도 70% (기존 0.8)
+        expMult: 1.8,              // 경험치 180% (기존 1.3)
+        spawnRateMult: 2.5,        // ★ 스폰 간격 2.5배 느리게 (VS 초반처럼 여유)
+        spawnCountMult: 0.4,       // ★ 동시 스폰 40% (3→1~2마리)
+        waveSizeMult: 0.3,         // ★ 웨이브 크기 30% (20→6마리)
+        eliteStartMin: 10,         // ★ 엘리트 10분부터 (기존 3분)
+        desc: '누구나 즐길 수 있는 입문 모드'
     },
     normal: {
         name: '보통',
@@ -254,6 +258,10 @@ const DIFFICULTY = {
         enemyDmgMult: 1.0,
         enemySpeedMult: 1.0,
         expMult: 1.0,
+        spawnRateMult: 1.0,        // 기본
+        spawnCountMult: 1.0,
+        waveSizeMult: 1.0,
+        eliteStartMin: 3,
         desc: '기본 난이도'
     },
     hard: {
@@ -263,6 +271,10 @@ const DIFFICULTY = {
         enemyDmgMult: 1.3,
         enemySpeedMult: 1.2,
         expMult: 0.9,
+        spawnRateMult: 1.0,
+        spawnCountMult: 1.0,
+        waveSizeMult: 1.0,
+        eliteStartMin: 3,
         desc: '숙련자용'
     },
     hell: {
@@ -272,6 +284,10 @@ const DIFFICULTY = {
         enemyDmgMult: 1.8,
         enemySpeedMult: 1.4,
         expMult: 0.7,
+        spawnRateMult: 1.0,
+        spawnCountMult: 1.0,
+        waveSizeMult: 1.0,
+        eliteStartMin: 3,
         desc: '지옥체험'
     }
 };
@@ -5428,11 +5444,17 @@ class GameScene extends Phaser.Scene {
     }
 
     updateSpawning(time) {
-        // ★ 웨이브 기반 스폰 시스템
+        // ★ 웨이브 기반 스폰 시스템 (난이도별 스폰 배율 적용)
         const currentWave = this.getCurrentWave();
-        this.currentSpawnRate = currentWave.spawnRate;
+        const diff = this.difficultyConfig || DIFFICULTY.normal;
+        const rateMult = diff.spawnRateMult || 1.0;     // 스폰 간격 배율 (높을수록 느림)
+        const countMult = diff.spawnCountMult || 1.0;    // 동시 스폰 배율
+        const waveMult = diff.waveSizeMult || 1.0;       // 웨이브 크기 배율
+        const eliteStart = diff.eliteStartMin || 3;       // 엘리트 시작 시간(분)
+
+        this.currentSpawnRate = Math.floor(currentWave.spawnRate * rateMult);
         this.enemyTypes = currentWave.enemies;
-        this.currentSpawnCount = currentWave.spawnCount;
+        this.currentSpawnCount = Math.max(1, Math.round(currentWave.spawnCount * countMult));
 
         // 일반 스폰
         if (time > this.spawnTimer + this.currentSpawnRate) {
@@ -5442,27 +5464,28 @@ class GameScene extends Phaser.Scene {
             this.spawnTimer = time;
         }
 
-        // ★ 1분마다 대규모 웨이브
+        // ★ 1분마다 대규모 웨이브 (난이도별 크기 조절)
         const waveInterval = 60000;  // 1분
         if (this.gameTime > 0 && Math.floor(this.gameTime / waveInterval) > Math.floor((this.gameTime - 16) / waveInterval)) {
-            this.triggerWave(currentWave.waveSize);
+            const adjustedWaveSize = Math.max(3, Math.round(currentWave.waveSize * waveMult));
+            this.triggerWave(adjustedWaveSize);
         }
 
-        // ★ 엘리트 스폰 (3분 이후)
+        // ★ 엘리트 스폰 (난이도별 시작 시간)
         const minutes = this.gameTime / 60000;
-        if (minutes >= 3) {
+        if (minutes >= eliteStart) {
             // 시간대별 엘리트 스폰 간격
             let eliteInterval;
-            if (minutes < 8) {
+            if (minutes < eliteStart + 5) {
                 eliteInterval = 20000;  // 20초마다
-            } else if (minutes < 12) {
+            } else if (minutes < eliteStart + 9) {
                 eliteInterval = 15000;  // 15초마다
             } else {
                 eliteInterval = 8000;   // 8초마다
             }
 
             // 엘리트 수
-            const eliteCount = minutes >= 12 ? 2 : 1;
+            const eliteCount = minutes >= eliteStart + 9 ? 2 : 1;
 
             if (time > (this.eliteTimer || 0) + eliteInterval) {
                 for (let i = 0; i < eliteCount; i++) {
