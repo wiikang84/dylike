@@ -6784,7 +6784,7 @@ class LevelUpScene extends Phaser.Scene {
     constructor() { super({ key: 'LevelUpScene' }); }
     init(data) {
         this.data = data;
-        this.currentRerollCount = 0;  // 이번 레벨업에서 리롤한 횟수
+        this.currentRerollCount = data._rerollCount || 0;  // 리롤 횟수 유지
     }
 
     create() {
@@ -6940,6 +6940,7 @@ class LevelUpScene extends Phaser.Scene {
     // ★ 리롤 실행
     doReroll(expCost) {
         this.currentRerollCount++;
+        this.data._rerollCount = this.currentRerollCount;  // 리롤 횟수를 data에 저장
         if (this.data.rerollCallback) {
             this.data.rerollCallback(expCost);
             this.data.exp = Math.max(0, (this.data.exp || 0) - expCost);
