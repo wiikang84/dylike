@@ -297,17 +297,17 @@ const COLORS = {
 // ========== 적 타입 정의 (고퀄리티 텍스처 크기에 맞게 조정) ==========
 // ★ 난이도 15% 하향 조정: 속도/데미지 감소, 경험치 소폭 증가
 const ENEMY_TYPES = {
-    // 기본 적
-    sludge: { name: '슬러지', color: 0x4a3728, radius: 18, hp: 15, speed: 42, damage: 8, exp: 1 },
-    toxic: { name: '폐수', color: 0x7cb342, radius: 16, hp: 8, speed: 85, damage: 6, exp: 1 },
-    waste: { name: '폐기물', color: 0xff8f00, radius: 24, hp: 45, speed: 30, damage: 12, exp: 6 },
-    gas: { name: '유해가스', color: 0x9c27b0, radius: 20, hp: 18, speed: 50, damage: 4, exp: 2 },
+    // 기본 적 (밸런스 너프 2026-02-07: HP/데미지 하향)
+    sludge: { name: '슬러지', color: 0x4a3728, radius: 18, hp: 12, speed: 42, damage: 5, exp: 1 },       // 기존 hp:15 dmg:8
+    toxic: { name: '폐수', color: 0x7cb342, radius: 16, hp: 6, speed: 85, damage: 4, exp: 1 },           // 기존 hp:8 dmg:6
+    waste: { name: '폐기물', color: 0xff8f00, radius: 24, hp: 35, speed: 30, damage: 8, exp: 6 },        // 기존 hp:45 dmg:12
+    gas: { name: '유해가스', color: 0x9c27b0, radius: 20, hp: 14, speed: 50, damage: 3, exp: 2 },        // 기존 hp:18 dmg:4
 
-    // ★ 신규 몬스터 (난이도 하향)
-    pollutedWater: { name: '오염수', color: 0x1565c0, radius: 12, hp: 8, speed: 75, damage: 4, exp: 1 },      // 작고 빠름
-    grease: { name: '기름때', color: 0x37474f, radius: 22, hp: 35, speed: 30, damage: 15, exp: 4 },           // 느리고 강함
-    oilDrum: { name: '폐유통', color: 0xd84315, radius: 20, hp: 28, speed: 38, damage: 16, exp: 5 },          // 폭발
-    sludgeGiant: { name: '슬러지 거인', color: 0x3e2723, radius: 35, hp: 130, speed: 25, damage: 25, exp: 18 } // 미니보스급
+    // ★ 신규 몬스터 (너프)
+    pollutedWater: { name: '오염수', color: 0x1565c0, radius: 12, hp: 6, speed: 75, damage: 3, exp: 1 },  // 기존 hp:8 dmg:4
+    grease: { name: '기름때', color: 0x37474f, radius: 22, hp: 28, speed: 30, damage: 10, exp: 4 },       // 기존 hp:35 dmg:15
+    oilDrum: { name: '폐유통', color: 0xd84315, radius: 20, hp: 22, speed: 38, damage: 10, exp: 5 },      // 기존 hp:28 dmg:16
+    sludgeGiant: { name: '슬러지 거인', color: 0x3e2723, radius: 35, hp: 100, speed: 25, damage: 18, exp: 18 } // 기존 hp:130 dmg:25
 };
 
 // ========== 웨이브 설정 (뱀서라이크 스타일) ==========
@@ -373,7 +373,8 @@ const WEAPONS = {
     waterGun: { name: '고압 세척기', icon: '💧', desc: '물 발사', baseDamage: 10, baseCooldown: 400, projectileSpeed: 500, maxLevel: 99 },
     circleField: { name: '정화 필드', icon: '🔵', desc: '주변 정화', baseDamage: 5, baseRadius: 80, orbCount: 3, maxLevel: 99 },
     homingMissile: { name: '중화제 탄', icon: '🎯', desc: '유도탄', baseDamage: 25, baseCooldown: 2000, projectileSpeed: 250, maxLevel: 99 },
-    dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 8, baseCooldown: 100, range: 300, angle: 60, maxLevel: 99 },
+    // dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 8, baseCooldown: 100, range: 300, angle: 60, maxLevel: 99 },  // 기존
+    dredgeHose: { name: '준설호스', icon: '🌊', desc: '흡입 범위 공격', baseDamage: 5, baseCooldown: 300, range: 200, angle: 50, maxLevel: 99 },  // 너프
 
     // ★ 신규 8종 (maxLevel 99)
     blower: { name: '산업용 송풍기', icon: '💨', desc: '적 밀치기+데미지', baseDamage: 8, baseCooldown: 800, range: 180, angle: 60, knockback: 300, maxLevel: 99 },
@@ -389,27 +390,27 @@ const WEAPONS = {
     pipe: { name: '폐수파이프', icon: '🔧', desc: '관통 투사체', baseDamage: 18, baseCooldown: 1500, projectileSpeed: 400, pierce: 999, maxLevel: 99 }
 };
 
-// ========== 패시브 스킬 (16종) - 무제한 스케일링 ==========
+// ========== 패시브 스킬 (16종) - 밸런스 너프 (2026-02-07) ==========
 const PASSIVES = {
-    // 기존 5종 (maxLevel 99로 증가)
-    damage: { name: '정화력', icon: '⚔️', desc: '데미지 +10%', maxLevel: 99, effect: 0.1 },
-    speed: { name: '이동속도', icon: '👟', desc: '속도 +8%', maxLevel: 99, effect: 0.08 },
-    maxHp: { name: '체력', icon: '🛡️', desc: 'HP +25', maxLevel: 99, effect: 25 },
-    magnet: { name: '자석', icon: '🧲', desc: '수집범위 +30%', maxLevel: 99, effect: 0.3 },
-    regen: { name: '재생', icon: '💚', desc: '초당 HP +1', maxLevel: 99, effect: 1 },
+    // 기존 5종 (효과 축소)
+    damage: { name: '정화력', icon: '⚔️', desc: '데미지 +6%', maxLevel: 99, effect: 0.06 },       // 기존 0.1 → 0.06
+    speed: { name: '이동속도', icon: '👟', desc: '속도 +5%', maxLevel: 99, effect: 0.05 },          // 기존 0.08 → 0.05
+    maxHp: { name: '체력', icon: '🛡️', desc: 'HP +15', maxLevel: 99, effect: 15 },                  // 기존 25 → 15
+    magnet: { name: '자석', icon: '🧲', desc: '수집범위 +25%', maxLevel: 99, effect: 0.25 },        // 기존 0.3 → 0.25
+    regen: { name: '재생', icon: '💚', desc: '초당 HP +1', maxLevel: 99, effect: 1 },               // 유지
 
-    // ★ 신규 11종 (maxLevel 99)
-    cooldown: { name: '효율성', icon: '⚡', desc: '쿨다운 -5%', maxLevel: 99, effect: 0.05 },
-    projectile: { name: '투사체', icon: '✨', desc: '투사체 +1', maxLevel: 99, effect: 1 },
-    area: { name: '범위', icon: '🎆', desc: '공격범위 +10%', maxLevel: 99, effect: 0.1 },
-    growth: { name: '숙련도', icon: '📈', desc: '경험치 +8%', maxLevel: 99, effect: 0.08 },
-    armor: { name: '방어력', icon: '🔒', desc: '받는 데미지 -1', maxLevel: 99, effect: 1 },
-    critChance: { name: '크리티컬', icon: '💥', desc: '치명타 확률 +3%', maxLevel: 99, effect: 0.03 },
-    critDamage: { name: '치명타력', icon: '🔥', desc: '치명타 데미지 +15%', maxLevel: 99, effect: 0.15 },
-    duration: { name: '지속시간', icon: '⏱️', desc: '효과 지속 +10%', maxLevel: 99, effect: 0.1 },
-    luck: { name: '행운', icon: '🍀', desc: '아이템 드롭률 +5%', maxLevel: 99, effect: 0.05 },
-    pierce: { name: '관통', icon: '🗡️', desc: '투사체 관통 +1', maxLevel: 99, effect: 1 },
-    lifesteal: { name: '흡혈', icon: '🩸', desc: '데미지 1% HP회복', maxLevel: 99, effect: 0.01 }
+    // ★ 신규 11종 (효과 축소)
+    cooldown: { name: '효율성', icon: '⚡', desc: '쿨다운 -3%', maxLevel: 99, effect: 0.03 },       // 기존 0.05 → 0.03
+    projectile: { name: '투사체', icon: '✨', desc: '투사체 +1', maxLevel: 99, effect: 1 },          // 유지
+    area: { name: '범위', icon: '🎆', desc: '공격범위 +7%', maxLevel: 99, effect: 0.07 },           // 기존 0.1 → 0.07
+    growth: { name: '숙련도', icon: '📈', desc: '경험치 +8%', maxLevel: 99, effect: 0.08 },         // 유지
+    armor: { name: '방어력', icon: '🔒', desc: '받는 데미지 -1', maxLevel: 99, effect: 1 },         // 유지
+    critChance: { name: '크리티컬', icon: '💥', desc: '치명타 확률 +2%', maxLevel: 99, effect: 0.02 },  // 기존 0.03 → 0.02
+    critDamage: { name: '치명타력', icon: '🔥', desc: '치명타 데미지 +10%', maxLevel: 99, effect: 0.10 }, // 기존 0.15 → 0.10
+    duration: { name: '지속시간', icon: '⏱️', desc: '효과 지속 +10%', maxLevel: 99, effect: 0.1 },  // 유지
+    luck: { name: '행운', icon: '🍀', desc: '아이템 드롭률 +5%', maxLevel: 99, effect: 0.05 },     // 유지
+    pierce: { name: '관통', icon: '🗡️', desc: '투사체 관통 +1', maxLevel: 99, effect: 1 },         // 유지
+    lifesteal: { name: '흡혈', icon: '🩸', desc: '데미지 0.5% HP회복', maxLevel: 99, effect: 0.005 } // 기존 0.01 → 0.005
 };
 
 // ========== ★ 스킬 시너지 시스템 ★ ==========
@@ -493,7 +494,7 @@ const CLASS_TYPES = {
         desc: 'HP +20%, 물 공격 데미지 +30%',
         color: 0x00bcd4,
         bonus: { hpBonus: 0.20, waterDamage: 0.30 },
-        startWeapon: 'waterGun'
+        startWeapon: 'dredgeHose'  // 기존 waterGun → 준설호스로 변경
     },
     purifier: {
         name: '세정공',
@@ -3096,7 +3097,8 @@ class GameScene extends Phaser.Scene {
         this.joystickBase = this.add.circle(120, CONFIG.HEIGHT-100, 50, 0xffffff, 0.2).setScrollFactor(0).setDepth(99).setVisible(false);
         this.joystickThumb = this.add.circle(120, CONFIG.HEIGHT-100, 25, 0x00a8e8, 0.8).setScrollFactor(0).setDepth(100).setVisible(false);
 
-        const zone = this.add.rectangle(CONFIG.WIDTH/4, CONFIG.HEIGHT/2, CONFIG.WIDTH/2, CONFIG.HEIGHT, 0, 0).setScrollFactor(0).setDepth(98).setInteractive();
+        // const zone = this.add.rectangle(CONFIG.WIDTH/4, CONFIG.HEIGHT/2, CONFIG.WIDTH/2, CONFIG.HEIGHT, 0, 0).setScrollFactor(0).setDepth(98).setInteractive();  // 기존: 왼쪽 절반만
+        const zone = this.add.rectangle(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, CONFIG.WIDTH, CONFIG.HEIGHT, 0, 0).setScrollFactor(0).setDepth(98).setInteractive();  // 전체 화면 터치
 
         zone.on('pointerdown', (ptr) => {
             this.joystick.active = true;
@@ -3952,7 +3954,7 @@ class GameScene extends Phaser.Scene {
         if (!target) return;
         gameSoundManager.play('shoot');
 
-        const dmg = WEAPONS.waterGun.baseDamage * (1 + lv*0.2) * dmgBonus;
+        const dmg = WEAPONS.waterGun.baseDamage * (1 + lv*0.12) * dmgBonus;
         const count = Math.min(lv, 3);
         const baseAngle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
 
@@ -4326,7 +4328,7 @@ class GameScene extends Phaser.Scene {
         const px = this.player.x, py = this.player.y;
         const range = (WEAPONS.gloves.range + lv * 8) * areaBonus;
         const angleWidth = WEAPONS.gloves.angle * Math.PI / 180;
-        const dmg = WEAPONS.gloves.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const dmg = WEAPONS.gloves.baseDamage * (1 + lv * 0.12) * dmgBonus;
 
         const target = this.findClosestEnemy();
         const baseAngle = target ? Math.atan2(target.y - py, target.x - px) : (this.playerFacingAngle || 0);
@@ -4378,7 +4380,7 @@ class GameScene extends Phaser.Scene {
         const px = this.player.x, py = this.player.y;
         const radius = (WEAPONS.spray.radius + lv * 10) * areaBonus;
         const duration = WEAPONS.spray.duration + lv * 500;
-        const dps = WEAPONS.spray.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const dps = WEAPONS.spray.baseDamage * (1 + lv * 0.12) * dmgBonus;
         const durationBonus = 1 + (this.playerState.passives.duration || 0) * PASSIVES.duration.effect;
 
         // 초록 안개 영역
@@ -4437,7 +4439,7 @@ class GameScene extends Phaser.Scene {
         const target = this.findClosestEnemy();
         if (!target) return;
 
-        const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.25) * dmgBonus;
+        const dmg = WEAPONS.cone.baseDamage * (1 + lv * 0.15) * dmgBonus;
         const blastRadius = (50 + lv * 8) * (1 + (areaBonus - 1) * 0.5);
         const px = this.player.x, py = this.player.y;
         const targetX = target.x, targetY = target.y;
@@ -4673,7 +4675,7 @@ class GameScene extends Phaser.Scene {
     // ★★★ 충격파 - 캐릭터 중심 원형 폭발 (C방식) ★★★
     // 기존 미니탱크 소환 코드 → 성능 문제로 교체 (2026-02-07)
     fireTruck(lv, dmgBonus) {
-        const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.25) * dmgBonus;
+        const dmg = WEAPONS.truck.baseDamage * (1 + lv * 0.15) * dmgBonus;
         const shockRadius = 80 + lv * 12;
         const px = this.player.x, py = this.player.y;
 
@@ -4885,7 +4887,7 @@ class GameScene extends Phaser.Scene {
     // ★★★ 공습 - 적 다수에게 낙뢰 (C방식) ★★★
     // 기존 드론 소환 코드 → 성능 문제로 교체 (2026-02-07)
     fireDrone(lv, dmgBonus) {
-        const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const dmg = WEAPONS.drone.baseDamage * (1 + lv * 0.12) * dmgBonus;
         const targetCount = Math.min(3 + Math.floor(lv / 2), 8);
         const px = this.player.x, py = this.player.y;
 
@@ -5127,7 +5129,7 @@ class GameScene extends Phaser.Scene {
         if (!target) return;
 
         const px = this.player.x, py = this.player.y;
-        const dmg = WEAPONS.pipe.baseDamage * (1 + lv * 0.2) * dmgBonus;
+        const dmg = WEAPONS.pipe.baseDamage * (1 + lv * 0.12) * dmgBonus;
         const speed = WEAPONS.pipe.projectileSpeed + lv * 20;
         const pierceBonus = (this.playerState.passives.pierce || 0) * PASSIVES.pierce.effect;
         const projectileBonus = (this.playerState.passives.projectile || 0);
