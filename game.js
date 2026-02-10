@@ -3541,8 +3541,12 @@ class GameScene extends Phaser.Scene {
         return active;
     }
 
-    // 시너지 보너스 계산 (+ 클래스 보너스 + 장비 보너스)
+    // 시너지 보너스 계산 (+ 클래스 보너스 + 장비 보너스) ★ 프레임당 1회 캐싱
     getSynergyBonus() {
+        const frameTime = this.time.now;
+        if (this._synergyBonusFrame === frameTime && this._synergyBonusCache) {
+            return this._synergyBonusCache;
+        }
         const activeSynergies = this.getActiveSynergies();
         const classBonus = this.playerState.classBonus || {};
         const equipBonus = this.getEquipmentBonus ? this.getEquipmentBonus() : {};
@@ -3590,6 +3594,8 @@ class GameScene extends Phaser.Scene {
             if (synergy.bonus.lifesteal) bonus.lifesteal += synergy.bonus.lifesteal;
         }
 
+        this._synergyBonusFrame = frameTime;
+        this._synergyBonusCache = bonus;
         return bonus;
     }
 
@@ -3943,10 +3949,16 @@ class GameScene extends Phaser.Scene {
         // ★ 클래스 보너스: 물 공격 데미지 (준설공 전용)
         const waterDmgBonus = 1 + (synergyBonus.waterDamage || 0);
 
+        // ★ 쿨다운/범위 보너스 (모든 무기 공통, 위로 이동)
+        // const cdBonus = 1 - (this.playerState.passives.cooldown || 0) * PASSIVES.cooldown.effect - synergyBonus.cooldown;
+        const cdBonus = Math.max(0.1, 1 - (this.playerState.passives.cooldown || 0) * PASSIVES.cooldown.effect - synergyBonus.cooldown); // ★ 최소 10% 클램프로 음수 방지
+        const areaBonus = 1 + (this.playerState.passives.area || 0) * PASSIVES.area.effect + synergyBonus.area;
+
         // 고압 세척기 (물 공격 - 준설공 보너스 적용)
         const wgLv = this.playerState.weapons.waterGun || 0;
         if (wgLv > 0) {
-            const cd = WEAPONS.waterGun.baseCooldown * (1 - wgLv * 0.05);
+            // const cd = WEAPONS.waterGun.baseCooldown * (1 - wgLv * 0.05);
+            const cd = WEAPONS.waterGun.baseCooldown * Math.max(0.1, 1 - wgLv * 0.05) * cdBonus; // ★ 클램프 + 패시브 쿨다운 적용
             if (time > this.weaponTimers.waterGun + cd) {
                 this.fireWaterGun(wgLv, dmgBonus * waterDmgBonus);
                 this.weaponTimers.waterGun = time;
@@ -3956,7 +3968,8 @@ class GameScene extends Phaser.Scene {
         // 유도탄
         const hmLv = this.playerState.weapons.homingMissile || 0;
         if (hmLv > 0) {
-            const cd = WEAPONS.homingMissile.baseCooldown * (1 - hmLv * 0.05);
+            // const cd = WEAPONS.homingMissile.baseCooldown * (1 - hmLv * 0.05);
+            const cd = WEAPONS.homingMissile.baseCooldown * Math.max(0.1, 1 - hmLv * 0.05) * cdBonus; // ★ 클램프 + 패시브 쿨다운 적용
             if (time > this.weaponTimers.homingMissile + cd) {
                 this.fireHoming(hmLv, dmgBonus);
                 this.weaponTimers.homingMissile = time;
@@ -3966,7 +3979,8 @@ class GameScene extends Phaser.Scene {
         // ★ 준설호스 (물 공격 - 준설공 보너스 적용)
         const dhLv = this.playerState.weapons.dredgeHose || 0;
         if (dhLv > 0) {
-            const cd = WEAPONS.dredgeHose.baseCooldown;
+            // const cd = WEAPONS.dredgeHose.baseCooldown;
+            const cd = WEAPONS.dredgeHose.baseCooldown * cdBonus; // ★ 패시브 쿨다운 적용
             if (time > this.weaponTimers.dredgeHose + cd) {
                 this.fireDredgeHose(dhLv, dmgBonus * waterDmgBonus);
                 this.weaponTimers.dredgeHose = time;
@@ -3974,13 +3988,12 @@ class GameScene extends Phaser.Scene {
         }
 
         // ★ 신규 무기들 (시너지 보너스 포함)
-        const cdBonus = 1 - (this.playerState.passives.cooldown || 0) * PASSIVES.cooldown.effect - synergyBonus.cooldown;
-        const areaBonus = 1 + (this.playerState.passives.area || 0) * PASSIVES.area.effect + synergyBonus.area;
+        // cdBonus, areaBonus는 위로 이동됨
 
         // 산업용 송풍기
         const blowerLv = this.playerState.weapons.blower || 0;
         if (blowerLv > 0) {
-            const cd = WEAPONS.blower.baseCooldown * cdBonus * (1 - blowerLv * 0.05);
+            const cd = WEAPONS.blower.baseCooldown * cdBonus * Math.max(0.1, 1 - blowerLv * 0.05);
             if (time > (this.weaponTimers.blower || 0) + cd) {
                 this.fireBlower(blowerLv, dmgBonus, areaBonus);
                 this.weaponTimers.blower = time;
@@ -3990,7 +4003,7 @@ class GameScene extends Phaser.Scene {
         // 오염측정기 (체인 번개)
         const detectorLv = this.playerState.weapons.detector || 0;
         if (detectorLv > 0) {
-            const cd = WEAPONS.detector.baseCooldown * cdBonus * (1 - detectorLv * 0.05);
+            const cd = WEAPONS.detector.baseCooldown * cdBonus * Math.max(0.1, 1 - detectorLv * 0.05);
             if (time > (this.weaponTimers.detector || 0) + cd) {
                 this.fireDetector(detectorLv, dmgBonus);
                 this.weaponTimers.detector = time;
@@ -4000,7 +4013,7 @@ class GameScene extends Phaser.Scene {
         // 보호장갑 (펀치)
         const glovesLv = this.playerState.weapons.gloves || 0;
         if (glovesLv > 0) {
-            const cd = WEAPONS.gloves.baseCooldown * cdBonus * (1 - glovesLv * 0.03);
+            const cd = WEAPONS.gloves.baseCooldown * cdBonus * Math.max(0.1, 1 - glovesLv * 0.03);
             if (time > (this.weaponTimers.gloves || 0) + cd) {
                 this.fireGloves(glovesLv, dmgBonus, areaBonus);
                 this.weaponTimers.gloves = time;
@@ -4010,7 +4023,7 @@ class GameScene extends Phaser.Scene {
         // 소독스프레이 (영역 생성)
         const sprayLv = this.playerState.weapons.spray || 0;
         if (sprayLv > 0) {
-            const cd = WEAPONS.spray.baseCooldown * cdBonus * (1 - sprayLv * 0.05);
+            const cd = WEAPONS.spray.baseCooldown * cdBonus * Math.max(0.1, 1 - sprayLv * 0.05);
             if (time > (this.weaponTimers.spray || 0) + cd) {
                 this.fireSpray(sprayLv, dmgBonus, areaBonus);
                 this.weaponTimers.spray = time;
@@ -4020,7 +4033,7 @@ class GameScene extends Phaser.Scene {
         // 안전콘 (설치 폭탄)
         const coneLv = this.playerState.weapons.cone || 0;
         if (coneLv > 0) {
-            const cd = WEAPONS.cone.baseCooldown * cdBonus * (1 - coneLv * 0.05);
+            const cd = WEAPONS.cone.baseCooldown * cdBonus * Math.max(0.1, 1 - coneLv * 0.05);
             if (time > (this.weaponTimers.cone || 0) + cd) {
                 this.fireCone(coneLv, dmgBonus, areaBonus);
                 this.weaponTimers.cone = time;
@@ -4030,7 +4043,7 @@ class GameScene extends Phaser.Scene {
         // 청소차 (돌진)
         const truckLv = this.playerState.weapons.truck || 0;
         if (truckLv > 0) {
-            const cd = WEAPONS.truck.baseCooldown * cdBonus * (1 - truckLv * 0.05);
+            const cd = WEAPONS.truck.baseCooldown * cdBonus * Math.max(0.1, 1 - truckLv * 0.05);
             if (time > (this.weaponTimers.truck || 0) + cd) {
                 this.fireTruck(truckLv, dmgBonus);
                 this.weaponTimers.truck = time;
@@ -4040,7 +4053,7 @@ class GameScene extends Phaser.Scene {
         // 환경드론 (자동 순찰)
         const droneLv = this.playerState.weapons.drone || 0;
         if (droneLv > 0) {
-            const cd = WEAPONS.drone.baseCooldown * cdBonus * (1 - droneLv * 0.05);
+            const cd = WEAPONS.drone.baseCooldown * cdBonus * Math.max(0.1, 1 - droneLv * 0.05);
             if (time > (this.weaponTimers.drone || 0) + cd) {
                 this.fireDrone(droneLv, dmgBonus);
                 this.weaponTimers.drone = time;
@@ -4050,7 +4063,7 @@ class GameScene extends Phaser.Scene {
         // 폐수파이프 (관통)
         const pipeLv = this.playerState.weapons.pipe || 0;
         if (pipeLv > 0) {
-            const cd = WEAPONS.pipe.baseCooldown * cdBonus * (1 - pipeLv * 0.05);
+            const cd = WEAPONS.pipe.baseCooldown * cdBonus * Math.max(0.1, 1 - pipeLv * 0.05);
             if (time > (this.weaponTimers.pipe || 0) + cd) {
                 this.firePipe(pipeLv, dmgBonus);
                 this.weaponTimers.pipe = time;
@@ -4286,7 +4299,8 @@ class GameScene extends Phaser.Scene {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             // 데미지
-            e.hp -= dmg;
+            // e.hp -= dmg; // 기존: 직접 차감 (크리티컬/흡혈 미적용)
+            this.damageEnemy(e, dmg); // ★ damageEnemy로 크리티컬/흡혈 패시브 적용
 
             // ★ 빨려들어오는 모션 (호스 끝으로)
             this.tweens.add({
@@ -4559,7 +4573,8 @@ class GameScene extends Phaser.Scene {
         // 초록 안개 영역
         const zone = this.add.circle(px, py, radius, 0x7cb342, 0.4).setDepth(5);
 
-        // 파티클 효과
+        // 파티클 효과 (★ 파티클 배열로 관리하여 소멸 시 정리)
+        const sprayParticles = [];
         for (let i = 0; i < 8; i++) {
             const angle = (Math.PI * 2 / 8) * i;
             const p = this.add.circle(
@@ -4567,6 +4582,7 @@ class GameScene extends Phaser.Scene {
                 py + Math.sin(angle) * radius * 0.5,
                 5, 0xaed581, 0.6
             ).setDepth(6);
+            sprayParticles.push(p);
 
             this.tweens.add({
                 targets: p,
@@ -4602,6 +4618,11 @@ class GameScene extends Phaser.Scene {
             onComplete: () => {
                 zone.destroy();
                 damageTimer.remove();
+                // ★ 파티클 및 트윈 정리 (메모리 누수 방지)
+                sprayParticles.forEach(p => {
+                    this.tweens.killTweensOf(p);
+                    p.destroy();
+                });
             }
         });
     }
@@ -5376,19 +5397,27 @@ class GameScene extends Phaser.Scene {
                 if (!e.active) return;
                 const dx = orb.x - e.x, dy = orb.y - e.y;
                 if (dx*dx + dy*dy < (20 + e.enemyRadius)**2) {
-                    e.hp -= dmg * 0.05;
+                    // e.hp -= dmg * 0.05; // 기존: 프레임레이트 종속 + 패시브 미적용
+                    this.damageEnemy(e, dmg * dt); // ★ delta 기반 데미지 + 크리티컬/흡혈 적용
                 }
             });
         });
     }
 
+    // ★ 프레임당 1회만 계산하고 캐싱 (성능 최적화)
     findClosestEnemy() {
+        const frameTime = this.time.now;
+        if (this._closestEnemyFrame === frameTime && this._closestEnemyCache !== undefined) {
+            return this._closestEnemyCache;
+        }
         let closest = null, minDist = Infinity;
         this.enemies.children.each(e => {
             if (!e.active) return;
             const d = (e.x-this.player.x)**2 + (e.y-this.player.y)**2;
             if (d < minDist) { minDist = d; closest = e; }
         });
+        this._closestEnemyFrame = frameTime;
+        this._closestEnemyCache = closest;
         return closest;
     }
 
@@ -6492,8 +6521,22 @@ class GameScene extends Phaser.Scene {
     // 보스 탄환 충돌 처리
     onBulletHitBoss(bullet, boss) {
         if (!bullet.active || !boss.active) return;
-        boss.hp -= bullet.damage;
-        bullet.setActive(false).setVisible(false).setVelocity(0, 0);
+        // ★ 관통 로직 추가 + damageEnemy로 크리티컬/흡혈 적용
+        if (bullet.pierce && bullet.pierce > 0 && bullet.hitEnemies) {
+            if (bullet.hitEnemies.has(boss)) return;
+            bullet.hitEnemies.add(boss);
+            this.damageEnemy(boss, bullet.damage);
+            if (bullet.hitEnemies.size >= bullet.pierce) {
+                bullet.setActive(false).setVisible(false).setVelocity(0, 0);
+            }
+        } else {
+            this.damageEnemy(boss, bullet.damage);
+            bullet.setActive(false).setVisible(false).setVelocity(0, 0);
+        }
+        // /* 기존 코드 (관통 미지원, 패시브 미적용)
+        // boss.hp -= bullet.damage;
+        // bullet.setActive(false).setVisible(false).setVelocity(0, 0);
+        // */
     }
 
     // 보스 플레이어 충돌 처리
@@ -6586,8 +6629,23 @@ class GameScene extends Phaser.Scene {
 
     onBulletHit(bullet, enemy) {
         if (!bullet.active || !enemy.active) return;
-        enemy.hp -= bullet.damage;
-        bullet.setActive(false).setVisible(false).setVelocity(0,0);
+        // ★ 관통 로직 추가 (폐수파이프 등)
+        if (bullet.pierce && bullet.pierce > 0 && bullet.hitEnemies) {
+            if (bullet.hitEnemies.has(enemy)) return; // 이미 맞은 적은 무시
+            bullet.hitEnemies.add(enemy);
+            this.damageEnemy(enemy, bullet.damage);
+            if (bullet.hitEnemies.size >= bullet.pierce) {
+                bullet.setActive(false).setVisible(false).setVelocity(0,0);
+            }
+        } else {
+            // 일반 탄환: 기존 방식 + damageEnemy 적용
+            this.damageEnemy(enemy, bullet.damage);
+            bullet.setActive(false).setVisible(false).setVelocity(0,0);
+        }
+        // /* 기존 코드 (관통 미지원)
+        // enemy.hp -= bullet.damage;
+        // bullet.setActive(false).setVisible(false).setVelocity(0,0);
+        // */
     }
 
     onCollectExp(player, exp) {

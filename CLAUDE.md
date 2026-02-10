@@ -136,6 +136,20 @@ git add . && git commit -m "메시지" && git push origin main
 - 수정 후 반드시: `firebase deploy` + `git push`
 
 ## 변경 이력
+- 2026-02-10: 종합 보안/버그/성능 수정 (4팀 서브에이전트 코드 리뷰 기반)
+  - [버그] 폐수파이프 관통(pierce) 미작동 수정 (onBulletHit/onBulletHitBoss에 pierce+hitEnemies 로직 추가)
+  - [버그] 쿨다운 보너스 음수 방지 (Math.max(0.1, ...) 클램프, 모든 무기 적용)
+  - [버그] 고압세척기/유도탄/준설호스에 쿨다운 패시브(cdBonus) 미적용 수정
+  - [버그] 준설호스 직접 hp 차감 → damageEnemy() 변경 (크리티컬/흡혈 적용)
+  - [버그] 정화필드 프레임레이트 종속 데미지 → delta 기반으로 변경 + damageEnemy 적용
+  - [버그] 보스 탄환 공격에 크리티컬/흡혈 패시브 미적용 수정
+  - [메모리] 소독스프레이 파티클 repeat:-1 트윈 메모리 누수 수정 (zone 소멸 시 파티클+트윈 정리)
+  - [성능] findClosestEnemy() 프레임당 1회 캐싱 (무기 12개 x 300마리 중복 연산 제거)
+  - [성능] getSynergyBonus() 프레임당 1회 캐싱 (damageEnemy 호출마다 재계산 방지)
+  - [보안] Phaser.js CDN에 SRI(SHA384) + crossorigin 적용
+  - [보안] Firebase 보안 헤더 추가 (X-Frame-Options, X-Content-Type-Options, CSP 등 6종)
+  - [보안] ignore에 CLAUDE.md 추가 (배포 시 노출 방지)
+  - [보안] rewrites 추가 (404 방지)
 - 2026-02-08: 쉬움 난이도 대폭 완화 (VS 리서치 기반)
   - 적 HP 0.7→0.4, 데미지 0.6→0.3, 속도 0.8→0.7, 경험치 1.3→1.8
   - 스폰 간격 2.5배 느리게, 동시 스폰 40%, 웨이브 크기 30%
